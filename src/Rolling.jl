@@ -18,4 +18,6 @@ function Base.push!(state::FixedWindowState{T}, value::T) where T
     return state
 end
 
+Base.push!(state::FixedWindowState{T}, values...) where T = foreach(value -> push!(state, value), values)
+
 end # module
