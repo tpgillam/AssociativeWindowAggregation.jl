@@ -1,18 +1,21 @@
 module Rolling
 
-export WindowState, add_value!, empty_state
+export FixedWindowState, push!
 
-mutable struct WindowState{T}
+mutable struct FixedWindowState{T}
     data::Array{T, 1}
     i::Int64
+    capacity::Int64
 end
 
-empty_state(T::Type) = WindowState{T}(T[], 0)
-# empty_state(value::T) = WindowState{T}([value], 1)
+FixedWindowState{T}(capacity::Int64) where T = FixedWindowState(T[], 0, capacity)
 
-function add_value!(window_state::WindowState, value)
-    push!(window_state.data, value)
-    window_state.i += 1
+function Base.push!(state::FixedWindowState{T}, value::T) where T
+    push!(state.data, value)
+    if state.i + 1 < state.capacity
+        state.i += 1
+    end
+    return state
 end
 
 end # module
