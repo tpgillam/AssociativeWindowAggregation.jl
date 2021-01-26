@@ -4,8 +4,12 @@
 
 Computate aggregation of operators over rolling windows incrementally.
 
-Supports aggregation of any binary associative operator, with potentially variable window size for aggregation in amortized O(1) time, and O(L) space, where L is the typical window length.
+Supports aggregation of any binary associative operator, with potentially variable window size. 
+Runs in amortized `O(1)` time, and uses `O(L)` space, where `L` is the typical window length.
 
 ## Notes
 
 - No attempts to optimise or otherwise benchmark the algorithms has been done (yet)!
+
+## TODO
+- Fixed window for simple types would benefit from statically allocated buffers that could be reused.
