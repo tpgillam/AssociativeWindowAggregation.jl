@@ -2,12 +2,13 @@
 
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 
-Computate aggregation of operators over rolling windows.
+Accumulate operators over rolling windows.
 
-Supports aggregation of any binary associative operator, and a variable window size.
-
-## Complexity
-Runs in amortized `O(1)` time, and uses `O(L)` space, where `L` is the typical window length.
+## Features
+- Supports any binary operator that is associative (see Assumptions section for an elaboration).
+- Supports a potentially variable window size.
+- Supports adding values incrementally, e.g. when streaming data.
+- Runs in amortized `O(1)` time, and uses `O(L)` space, where `L` is the typical window length.
 
 ## Assumptions and stability
 We assume that operators are associative.
@@ -17,7 +18,7 @@ As detailed below, there is no long term accumulation of errors.
 
 Note that we *do not* assume:
 - The existence of an inverse
-- Operator commutativity
+- Commutativity
 
 ### Example
 Consider computing a rolling sum over `[a, b, c, d, e]` with window size `3`.
