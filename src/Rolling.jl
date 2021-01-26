@@ -2,20 +2,55 @@ module Rolling
 
 export FixedWindowAssociativeOp, WindowedAssociativeOpState, update_state!
 
-# TODO improve docstring.
 """
     WindowedAssociativeOpState{T}
 
-State associated with a windowed aggregation of a binary associative operator.
+State associated with a windowed aggregation of a binary associative operator,
+in a numerically accurate fashion.
+
+Wherever summation is discussed, we can consider any alternative binary, associative,
+operator. For example:
+
+    * a + b
+    * a * b
+    * a @ b
+    * max(a, b)
+    * min(a, b)
+    * a and b
+
+NB. It is interesting to observe that commutativity is *not* required by this algorithm,
+which is one of the reasons that it enjoys stable numerical performance.
+
+Conceptually the window is maintained in two buffers:
+
+        [---- A ---)[----- B ------)
+            <                      >    <-- current window finishes at the end of B, and
+                                            starts somewhere in A.
+
+A is stored as a sequence of cumulative sums, such that as the "<" advances we merely pick
+    out the correct element:
+
+        x_i,   x_i-1 + x_i,  x_i-2 + x_i-1 + x_i
+
+B is stored as both:
+    * The sequence of values seen:  x_i+1,  x_i+2,  x_i+3,  ...
+    * The total of that sequence:  x_i+1 + x_i+2 + x_i+3 + ...
+
+When the "<" advances from A to B, we discard A, and the subset of B remaining after "<"
+becomes the new A. In becoming A, we transform its representation into that of the
+cumulative sums. We create a new, empty, B.
+
+O(1) amortized runtime complexity, and O(L) space complexity, where L is the typical window
+length.
 
 # Fields
-- `value_count::Int`
-- `op::Function`:  # (T, T) -> T
-- `previous_cumsum::Array{T, 1}`
-- `ri_previous_cumsum::Int`: A reverse index into previous_cumsum, once it contains values.
-    It should be subtracted from `end` in order to obtain the appropriate index.
-- `values::Array{T, 1}`
-- `sum::Union{Nothing, T}`
+- `value_count::Int`: The size of the window on the last update.
+- `op::Function`: Any binary, associative, function.
+- `previous_cumsum::Array{T, 1}`: Corresponds to array A above.
+- `ri_previous_cumsum::Int`: A reverse index into `previous_cumsum`, once it contains
+    values. It should be subtracted from `end` in order to obtain the appropriate index.
+- `values::Array{T, 1}`: Corresponds to array B above.
+- `sum::Union{Nothing, T}`: The sum of the elements in values.
 """
 mutable struct WindowedAssociativeOpState{T}
     value_count::Int
@@ -31,8 +66,26 @@ function WindowedAssociativeOpState{T}(op::Function) where T
 end
 
 
-# TODO docstring
+"""
+    update_state!(
+        state::WindowedAssociativeOpState{T},
+        value,
+        num_dropped_from_window::Integer
+    )::T where T
 
+Add the specified value to the state, drop some number of elements from the start of the
+window, and return the aggregated quantity.
+
+# Arguments
+- `state::WindowedAssociativeOpState{T}`
+- `value`: The value to add to the end of the window.
+- `num_dropped_from_window::Integer`: The number of elements to remove from the front of
+    the window.
+
+# Returns
+- `T`: The result of aggregating over the values in the window after adding `value`, and
+    removing `num_dropped_from_window` elements from the start of the window.
+"""
 function update_state!(
     state::WindowedAssociativeOpState{T},
     value,
