@@ -13,10 +13,10 @@ operator. For example:
 
     * a + b
     * a * b
-    * a @ b
     * max(a, b)
     * min(a, b)
-    * a and b
+    * a && b
+    * union(a, b)
 
 NB. It is interesting to observe that commutativity is *not* required by this algorithm,
 which is one of the reasons that it enjoys stable numerical performance.

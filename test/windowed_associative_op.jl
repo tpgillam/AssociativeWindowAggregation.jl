@@ -63,3 +63,8 @@ end
         test_fixed_window(values, op; approximate_equality=true)
     end
 end
+
+@testset "fixed window set union" begin
+    values = [Set([x]) for x in 1:20]
+    test_fixed_window(values, union)
+end
