@@ -27,7 +27,7 @@ function test_fixed_window(values, op; approximate_equality::Bool=false)
     end
 end
 
-@testset "fFixedWindowAssociativeOp" begin
+@testset "FixedWindowAssociativeOp" begin
     @testset "trivial" begin
         T = Int64
         op = +
@@ -45,7 +45,7 @@ end
         end
     end
 
-    @testset "andom float" begin
+    @testset "random float" begin
         values = rand(20)
         for op in (+, *, max, min)
             test_fixed_window(values, op; approximate_equality=true)
