@@ -44,7 +44,7 @@ The simple approach also does not generalise to operators like the set `union`, 
 
 
 ## Notes
-
+- API is very preliminary and likely to change a lot.
 - No attempts to optimise or otherwise benchmark the algorithms has been done (yet)!
 
 ## TODO
