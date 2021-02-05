@@ -54,10 +54,20 @@ mutable struct WindowedAssociativeOpState{T}
     sum::Union{Nothing, T}
 end
 
+"""
+    WindowedAssociativeOpState{T}
+
+Create a new, empty, instance of WindowedAssociativeOpState.
+
+# Arguments
+- `op::Function`: Any binary, associative, function.
+
+# Returns
+- `WindowedAssociativeOpState{T}`: An empty instance.
+"""
 function WindowedAssociativeOpState{T}(op::Function) where T
     return WindowedAssociativeOpState(0, op, T[], 0, T[], nothing)
 end
-
 
 """
     update_state!(
@@ -70,7 +80,7 @@ Add the specified value to the state, drop some number of elements from the star
 window, and return the aggregated quantity.
 
 # Arguments
-- `state::WindowedAssociativeOpState{T}`
+- `state::WindowedAssociativeOpState{T}`: The state to update (will be mutated).
 - `value`: The value to add to the end of the window - must be convertible to a `T`.
 - `num_dropped_from_window::Integer`: The number of elements to remove from the front of
     the window.
@@ -79,6 +89,8 @@ window, and return the aggregated quantity.
 - `T`: The result of aggregating over the values in the window after adding `value`, and
     removing `num_dropped_from_window` elements from the start of the window.
 """
+# TODO I think it would be nicer to return the state, and create functions to retrieve the
+# current value & window size.
 function update_state!(
     state::WindowedAssociativeOpState{T},
     value,
@@ -144,14 +156,32 @@ function update_state!(
 end
 
 
+"""
+    FixedWindowAssociativeOp{T}
+
+State necessary for accumulation over a rolling window of fixed size.
+
+# Fields
+- `window_state::WindowedAssociativeOpState{T}`: The underlying general-window state.
+- `remaining_window::Int`: How much of the window remains to be filled. Initially this will
+    be set to the window size, and will then reduce for every value added until it reaches
+    zero.
+"""
 mutable struct FixedWindowAssociativeOp{T}
     window_state::WindowedAssociativeOpState{T}
     remaining_window::Int
-    emit_early::Bool
+    emit_early::Bool  # TODO Remove this field? Is more to do with how to represent state.
 end
 
 """
     FixedWindowAssociativeOp{T}
+
+Construct a new empty instance of `FixedWindowAssociativeOp`.
+
+# Arguments
+- `op::Function`: Any binary, associative, function.
+- `window::Integer`: The fixed window size.
+- `emit_early::Bool`: Iff true, compute a value before the window is full.
 """
 function FixedWindowAssociativeOp{T}(
     op::Function, window::Integer; emit_early::Bool=false
