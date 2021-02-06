@@ -1,6 +1,7 @@
 module Rolling
 
-export FixedWindowAssociativeOp, WindowedAssociativeOpState, update_state!
+export FixedWindowAssociativeOp, WindowedAssociativeOpState
+export update_state!, window_full, window_size, window_value
 
 """
     WindowedAssociativeOpState{T}
@@ -48,10 +49,10 @@ window length.
 mutable struct WindowedAssociativeOpState{T}
     value_count::Int
     op::Function
-    previous_cumsum::Array{T, 1}
+    previous_cumsum::Array{T,1}
     ri_previous_cumsum::Int
-    values::Array{T, 1}
-    sum::Union{Nothing, T}
+    values::Array{T,1}
+    sum::Union{Nothing,T}
 end
 
 """
@@ -86,16 +87,13 @@ window, and return the aggregated quantity.
     the window.
 
 # Returns
-- `T`: The result of aggregating over the values in the window after adding `value`, and
-    removing `num_dropped_from_window` elements from the start of the window.
+- `::WindowedAssociativeOpState{T}`: The instance `state` that was passed in.
 """
-# TODO I think it would be nicer to return the state, and create functions to retrieve the
-# current value & window size.
 function update_state!(
     state::WindowedAssociativeOpState{T},
     value,
     num_dropped_from_window::Integer
-)::T where T
+)::WindowedAssociativeOpState{T} where T
     # Our index into previous_cumsum is advanced by the number of values we drop from the
     # window.
     state.ri_previous_cumsum += num_dropped_from_window
@@ -116,7 +114,7 @@ function update_state!(
             ))
         end
 
-        # TODO Is there a copy here that we could avoid?
+        # TODO: Is there a copy here that we could avoid?
         trimmed_reversed_values = state.values[end:-1:1 + num_values_to_remove]
 
         # We now generate the partial sum, and set our index back to zero. values is also
@@ -142,19 +140,55 @@ function update_state!(
     state.sum = length(state.values) == 0 ? value : state.op(state.sum, value)
     push!(state.values, value)
 
+    return state
+end
+
+
+"""
+    window_value(state::WindowedAssociativeOpState{T})::T where T
+
+Get the value currently represented by the state.
+
+# Arguments:
+- `state::WindowedAssociativeOpState{T}`: The state to query.
+
+# Returns:
+- `T`: The result of aggregating over the values in the window.
+"""
+function window_value(state::WindowedAssociativeOpState{T})::T where T
     if length(state.previous_cumsum) == 0
         # The A buffer is empty, so we need only worry about the 'B' buffer.
-        state.value_count = length(state.values)
         return state.sum
     else
         # Include contributions both from A and B buffers.
         # Remember that we are indexing from the back.
         index = length(state.previous_cumsum) - state.ri_previous_cumsum
-        state.value_count = length(state.values) + index
         return state.op(state.previous_cumsum[index], state.sum)
     end
 end
 
+"""
+    function window_size(state::WindowedAssociativeOpState{T})::Int where T
+
+Get the current size of the window in `state`.
+
+# Arguments:
+- `state::WindowedAssociativeOpState{T}`: The state to query.
+
+# Returns:
+- `Int`: The current size of the window.
+"""
+function window_size(state::WindowedAssociativeOpState{T})::Int where T
+    if length(state.previous_cumsum) == 0
+        # The A buffer is empty, so we need only worry about the 'B' buffer.
+        return length(state.values)
+    else
+        # Include contributions both from A and B buffers.
+        # Remember that we are indexing from the back.
+        index = length(state.previous_cumsum) - state.ri_previous_cumsum
+        return length(state.values) + index
+    end
+end
 
 """
     FixedWindowAssociativeOp{T}
@@ -170,7 +204,7 @@ State necessary for accumulation over a rolling window of fixed size.
 mutable struct FixedWindowAssociativeOp{T}
     window_state::WindowedAssociativeOpState{T}
     remaining_window::Int
-    emit_early::Bool  # TODO Remove this field? Is more to do with how to represent state.
+    emit_early::Bool  # TODO: Remove this field? Is more to do with how to represent state.
 end
 
 """
@@ -200,11 +234,16 @@ end
         value
     )::Union{T, Nothing} where T
 
+Add the specified `value` to the `state`. Drop a value from the window iff the window is
+full.
+
+# Returns
+- `::FixedWindowAssociativeOp{T}`: The instance `state` that was passed in.
 """
 function update_state!(
     state::FixedWindowAssociativeOp{T},
     value
-)::Union{T, Nothing} where T
+)::FixedWindowAssociativeOp{T} where T
     num_dropped_from_window = if state.remaining_window > 0
         state.remaining_window -= 1
         0
@@ -212,12 +251,27 @@ function update_state!(
         1
     end
 
-    result = update_state!(state.window_state, value, num_dropped_from_window)
-    if state.emit_early || state.remaining_window == 0
-        return result
-    else
-        return nothing
-    end
+    update_state!(state.window_state, value, num_dropped_from_window)
+    return state
+    # # TODO: update for new update_state! style
+    # result = window_value(state.window_state)
+    # if state.emit_early || state.remaining_window == 0
+    #     return result
+    # else
+    #     return nothing
+    # end
 end
+
+window_value(state::FixedWindowAssociativeOp) = window_value(state.window_state)
+window_size(state::FixedWindowAssociativeOp)::Int = window_size(state.window_state)
+
+"""
+    window_full(state::FixedWindowAssociativeOp)::Bool
+
+# Returns:
+- `Bool`: true iff the given `state` has a full window.
+"""
+window_full(state::FixedWindowAssociativeOp)::Bool = state.remaining_window == 0
+
 
 end # module
