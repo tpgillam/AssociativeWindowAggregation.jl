@@ -10,13 +10,13 @@ y = sin.(x) + 0.5 * rand(length(x))
 plot(x, y; label="raw", title="Rolling means")
 
 for window in [5, 10, 20]
-    state = FixedWindowAssociativeOp{Float64}(+, window; emit_early=false)
+    state = FixedWindowAssociativeOp{Float64}(+, window)
 
     z = []
     for value in y
-        new_value = update_state!(state, value)
-        if !isnothing(new_value)
-            push!(z, new_value / window)
+        update_state!(state, value)
+        if window_full(state)
+            push!(z, window_value(state) / window)
         else
             push!(z, NaN)
         end
