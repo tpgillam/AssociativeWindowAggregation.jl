@@ -1,4 +1,3 @@
-
 function test_fixed_window(values, op; approximate_equality::Bool=false)
     T = typeof(first(values))
     for emit_early in [true, false]
