@@ -1,8 +1,8 @@
-@testset "WindowedAssociativeOpState" begin
+@testset "WindowedAssociativeOp" begin
     @testset "empty" begin
         for T in [Float64, Bool, Array{Float64, 1}]
             for op in [+, -, *]
-                state = WindowedAssociativeOpState{T}(op)
+                state = WindowedAssociativeOp{T}(op)
                 @test state.op == op
                 @test state.previous_cumsum == T[]
                 @test state.ri_previous_cumsum == 0
