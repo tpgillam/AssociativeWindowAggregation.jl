@@ -38,7 +38,6 @@ cumulative sums. We create a new, empty, `B`.
 window length.
 
 # Fields
-- `value_count::Int`: The size of the window on the last update.
 - `op::Function`: Any binary, associative, function.
 - `previous_cumsum::Array{T, 1}`: Corresponds to array `A` above.
 - `ri_previous_cumsum::Int`: A reverse index into `previous_cumsum`, once it contains
@@ -47,7 +46,6 @@ window length.
 - `sum::Union{Nothing, T}`: The sum of the elements in values.
 """
 mutable struct WindowedAssociativeOpState{T}
-    value_count::Int
     op::Function
     previous_cumsum::Array{T,1}
     ri_previous_cumsum::Int
@@ -67,7 +65,7 @@ Create a new, empty, instance of WindowedAssociativeOpState.
 - `WindowedAssociativeOpState{T}`: An empty instance.
 """
 function WindowedAssociativeOpState{T}(op::Function) where T
-    return WindowedAssociativeOpState(0, op, T[], 0, T[], nothing)
+    return WindowedAssociativeOpState(op, T[], 0, T[], nothing)
 end
 
 """
@@ -204,7 +202,6 @@ State necessary for accumulation over a rolling window of fixed size.
 mutable struct FixedWindowAssociativeOp{T}
     window_state::WindowedAssociativeOpState{T}
     remaining_window::Int
-    emit_early::Bool  # TODO: Remove this field? Is more to do with how to represent state.
 end
 
 """
@@ -215,17 +212,12 @@ Construct a new empty instance of `FixedWindowAssociativeOp`.
 # Arguments
 - `op::Function`: Any binary, associative, function.
 - `window::Integer`: The fixed window size.
-- `emit_early::Bool`: Iff true, compute a value before the window is full.
 """
-function FixedWindowAssociativeOp{T}(
-    op::Function, window::Integer; emit_early::Bool=false
-) where T
+function FixedWindowAssociativeOp{T}(op::Function, window::Integer) where T
     if window < 1
         throw(ArgumentError("Got window $window, but it must be positive."))
     end
-    return FixedWindowAssociativeOp{T}(
-        WindowedAssociativeOpState{T}(op), window, emit_early
-    )
+    return FixedWindowAssociativeOp{T}(WindowedAssociativeOpState{T}(op), window)
 end
 
 """
@@ -253,13 +245,6 @@ function update_state!(
 
     update_state!(state.window_state, value, num_dropped_from_window)
     return state
-    # # TODO: update for new update_state! style
-    # result = window_value(state.window_state)
-    # if state.emit_early || state.remaining_window == 0
-    #     return result
-    # else
-    #     return nothing
-    # end
 end
 
 window_value(state::FixedWindowAssociativeOp) = window_value(state.window_state)

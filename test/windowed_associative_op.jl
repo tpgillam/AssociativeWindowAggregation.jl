@@ -3,7 +3,6 @@
         for T in [Float64, Bool, Array{Float64, 1}]
             for op in [+, -, *]
                 state = WindowedAssociativeOpState{T}(op)
-                @test state.value_count == 0
                 @test state.op == op
                 @test state.previous_cumsum == T[]
                 @test state.ri_previous_cumsum == 0
