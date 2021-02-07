@@ -67,4 +67,5 @@ end
     end
 
     # TODO: more tests
+    # TODO test that we raise an exception on out-of-order times
 end
