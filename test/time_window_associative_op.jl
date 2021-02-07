@@ -1,15 +1,10 @@
-function test_time_window(times, values, op; approximate_equality::Bool=false)
+function test_time_window(times, values, windows, op; approximate_equality::Bool=false)
     # Work out what types we should be using for times and values
-    Time = typeof(first(times))
-    TimeDiff = typeof(first(times) - first(times))
     Value = typeof(first(values))
+    Time = typeof(first(times))
+    TimeDiff = typeof(first(windows))
 
-    time_range = last(times) - first(times)
-    for window in range(time_range / 100, time_range; length=20)
-        # window may not have the correct type at the moment, it could be a rational number,
-        # for example. For our purposes we just need to round it into a TimeDiff.
-        window = max(one(TimeDiff), round(TimeDiff, window))
-
+    for window in windows
         state = TimeWindowAssociativeOp{Value,Time,TimeDiff}(op, window)
         for (i, (time, value)) in enumerate(zip(times, values))
             @test update_state!(state, time, value) == state
@@ -61,7 +56,13 @@ end
 
     @testset "integral" begin
         for op in (+, *, max, min)
-            test_time_window(1:20, 1:20, op)
+            test_time_window(1:20, 1:20, 1:20, op)
+            test_time_window(
+                [Dates.DateTime(2000, 1, x) for x in 1:20],
+                1:20,
+                [Dates.Day(x) for x in 1:30],
+                op
+            )
         end
     end
 
