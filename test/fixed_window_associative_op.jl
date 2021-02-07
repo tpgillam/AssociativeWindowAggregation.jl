@@ -8,8 +8,7 @@ function test_fixed_window(values, op; approximate_equality::Bool=false)
             @test update_state!(state, value) == state
 
             received = window_value(state)
-            # This is the expected range of the input values over which we are
-            # reducing.
+            # This is the expected range of the input values over which we are reducing.
             i_start = max(1, i - window + 1)
             i_stop = i
             expected = reduce(op, values[i_start:i_stop])
