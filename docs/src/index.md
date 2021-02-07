@@ -1,4 +1,6 @@
-# Rolling.jl Documentation
+# Rolling.jl
+
+## Examples
 
 ```@example mean
 using Plots
@@ -26,8 +28,3 @@ for window in [5, 10, 20]
 end
 current()
 ```
-
-```@autodocs
-Modules = [Rolling]
-```
-
