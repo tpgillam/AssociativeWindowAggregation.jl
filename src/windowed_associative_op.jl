@@ -71,7 +71,7 @@ end
     )::WindowedAssociativeOp{T} where T
 
 Add the specified value to the state, drop some number of elements from the start of the
-window, and return the aggregated quantity.
+window, and return `state` (which will have been mutated).
 
 # Arguments
 - `state::WindowedAssociativeOp{T}`: The state to update (will be mutated).

@@ -1,12 +1,16 @@
 using DataStructures: Deque
 
-# TODO: Need to add checks / declare undefined behaviour if times provided to update_state!
-#   are not strictly increasing.
-
 """
     TimeWindowAssociativeOp{Value, Time, TimeDiff}
 
 State necessary for accumulation over a rolling window of fixed size, in terms of time.
+
+When presented with a new time t', we guarantee that all times t remaining in the window
+satisfy:
+
+    t > t' - w
+
+That is, at time t' this window represents the open-closed time interval (t' - w, t']
 
 # Fields
 - `window_state::WindowedAssociativeOp{Value}`: The underlying general-window state.
@@ -38,11 +42,35 @@ function TimeWindowAssociativeOp{Value,Time,TimeDiff}(
     )
 end
 
+"""
+    update_state!(
+        state::TimeWindowAssociativeOp{Value,Time,TimeDiff},
+        time,
+        value
+    )::TimeWindowAssociativeOp{Value,Time,TimeDiff} where {Value,Time,TimeDiff}
+
+Add the specified `value` to the state with associated `time`, and drop any values that
+are no longer in the time window.
+
+# Arguments
+- `state::TimeWindowAssociativeOp{Value,Time,TimeDiff}`:
+- `time`: The time to which `value` corresponds.
+- `value`: The value to add to the window.
+
+# Returns
+- `::TimeWindowAssociativeOp{Value,Time,TimeDiff}`: `state`, which has been mutated.
+"""
 function update_state!(
     state::TimeWindowAssociativeOp{Value,Time,TimeDiff},
     time,
     value
 )::TimeWindowAssociativeOp{Value,Time,TimeDiff} where {Value,Time,TimeDiff}
+    if !isempty(state.times) && time <= last(state.times)
+        throw(ArgumentError(
+            "Got out-of-order time $time. Previous time was $(last(state.times))"
+        ))
+    end
+
     push!(state.times, time)
 
     # Drop off times from the front of the deque, keeping track of how many values we need
@@ -70,8 +98,7 @@ window_size(state::TimeWindowAssociativeOp)::Int = window_size(state.window_stat
 """
     window_full(state::TimeWindowAssociativeOp)::Bool
 
-# Returns:
-- `Bool`: true iff the given `state` has had at least one value drop out of the window,
-    indicating that the window is now full.
+Returns true iff the given `state` has had at least one value drop out of the window,
+indicating that the window is now full.
 """
 window_full(state::TimeWindowAssociativeOp)::Bool = state.window_full

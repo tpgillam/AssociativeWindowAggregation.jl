@@ -9,6 +9,10 @@ function test_time_window(times, values, windows, op; approximate_equality::Bool
         for (i, (time, value)) in enumerate(zip(times, values))
             @test update_state!(state, time, value) == state
 
+            # Passing the same time in twice is illegal, since it is not monotonically
+            # increasing.
+            @test_throws ArgumentError update_state!(state, time, value)
+
             received = window_value(state)
             # This is the expected range of the input values over which we are reducing.
             i_start = searchsortedlast(times, time - window) + 1
@@ -67,5 +71,4 @@ end
     end
 
     # TODO: more tests
-    # TODO test that we raise an exception on out-of-order times
 end

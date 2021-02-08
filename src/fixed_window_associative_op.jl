@@ -63,7 +63,6 @@ window_size(state::FixedWindowAssociativeOp)::Int = window_size(state.window_sta
 """
     window_full(state::FixedWindowAssociativeOp)::Bool
 
-# Returns:
-- `Bool`: true iff the given `state` has a full window.
+Returns true iff the given `state` has a full window.
 """
 window_full(state::FixedWindowAssociativeOp)::Bool = state.remaining_window == 0
