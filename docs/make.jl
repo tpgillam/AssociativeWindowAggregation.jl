@@ -1,9 +1,9 @@
-using Documenter, Rolling
+using Documenter, AssociativeWindowAggregation
 
 makedocs(
     format=Documenter.HTML(prettyurls=false),
-    modules=[Rolling],
-    sitename="Rolling.jl",
+    modules=[AssociativeWindowAggregation],
+    sitename="AssociativeWindowAggregation.jl",
     pages=[
         "Home" => "index.md",
         "examples.md",
@@ -16,6 +16,6 @@ makedocs(
 )
 
 deploydocs(
-    repo="github.com/tpgillam/Rolling.jl.git",
+    repo="github.com/tpgillam/AssociativeWindowAggregation.jl.git",
     devbranch="main"
 )

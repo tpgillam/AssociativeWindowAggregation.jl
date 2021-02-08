@@ -1,6 +1,6 @@
-# Rolling.jl
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://tpgillam.github.io/Rolling.jl/dev)
-[![Build Status](https://github.com/tpgillam/Rolling.jl/workflows/CI/badge.svg)](https://github.com/tpgillam/Rolling.jl/actions)
+# AssociativeWindowAggregation.jl
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://tpgillam.github.io/AssociativeWindowAggregation.jl/dev)
+[![Build Status](https://github.com/tpgillam/AssociativeWindowAggregation.jl/workflows/CI/badge.svg)](https://github.com/tpgillam/AssociativeWindowAggregation.jl/actions)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 
 Accumulate result of appying binary associative operators on rolling windows.

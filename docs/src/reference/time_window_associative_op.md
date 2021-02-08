@@ -6,6 +6,6 @@ Every value pushed onto the state has an associated time, and time is taken to b
 The window is taken to be fixed in terms of time duration rather than a fixed number of values.
 
 ```@autodocs
-Modules = [Rolling]
+Modules = [AssociativeWindowAggregation]
 Pages = ["time_window_associative_op.jl"]
 ```

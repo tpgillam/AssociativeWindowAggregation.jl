@@ -7,7 +7,7 @@ length, only including values where the window has filled.
 
 ```@example mean
 using Plots
-using Rolling
+using AssociativeWindowAggregation
 
 x = range(1, 10; length=100)
 y = sin.(x) + 0.5 * rand(length(x))

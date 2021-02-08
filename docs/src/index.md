@@ -1,4 +1,4 @@
-# Rolling.jl
+# AssociativeWindowAggregation.jl
 
 Accumulate binary associative operators over rolling windows.
 

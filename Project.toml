@@ -1,4 +1,4 @@
-name = "Rolling"
+name = "AssociativeWindowAggregation"
 uuid = "444271a7-5434-4a02-b82b-0e30a9223c60"
 authors = ["Thomas Gillam <tpgillam@googlemail.com>"]
 version = "0.1.0"
