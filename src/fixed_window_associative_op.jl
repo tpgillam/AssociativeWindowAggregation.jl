@@ -12,22 +12,22 @@ State necessary for accumulation over a rolling window of fixed size.
 mutable struct FixedWindowAssociativeOp{T}
     window_state::WindowedAssociativeOp{T}
     remaining_window::Int
-end
 
-"""
-    FixedWindowAssociativeOp{T}
+    """
+        FixedWindowAssociativeOp{T}
 
-Construct a new empty instance of `FixedWindowAssociativeOp`.
+    Construct a new empty instance of `FixedWindowAssociativeOp`.
 
-# Arguments
-- `op::Function`: Any binary, associative, function.
-- `window::Integer`: The fixed window size.
-"""
-function FixedWindowAssociativeOp{T}(op::Function, window::Integer) where T
-    if window < 1
-        throw(ArgumentError("Got window $window, but it must be positive."))
+    # Arguments
+    - `op::Function`: Any binary, associative, function.
+    - `window::Integer`: The fixed window size.
+    """
+    function FixedWindowAssociativeOp{T}(op::Function, window::Integer) where T
+        if window < 1
+            throw(ArgumentError("Got window $window, but it must be positive."))
+        end
+        return new(WindowedAssociativeOp{T}(op), window)
     end
-    return FixedWindowAssociativeOp{T}(WindowedAssociativeOp{T}(op), window)
 end
 
 """

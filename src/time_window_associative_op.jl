@@ -25,21 +25,21 @@ mutable struct TimeWindowAssociativeOp{Value,Time,TimeDiff}
     window::TimeDiff
     times::Deque{Time}
     window_full::Bool
-end
 
-function TimeWindowAssociativeOp{Value,Time,TimeDiff}(
-    op::Function,
-    window::TimeDiff
-) where {Value,Time,TimeDiff}
-    if window <= zero(TimeDiff)
-        throw(ArgumentError("Got window $window, but it must be positive."))
+    function TimeWindowAssociativeOp{Value,Time,TimeDiff}(
+        op::Function,
+        window::TimeDiff
+    ) where {Value,Time,TimeDiff}
+        if window <= zero(TimeDiff)
+            throw(ArgumentError("Got window $window, but it must be positive."))
+        end
+        return new(
+            WindowedAssociativeOp{Value}(op),
+            window,
+            Deque{Time}(),
+            false
+        )
     end
-    return TimeWindowAssociativeOp{Value,Time,TimeDiff}(
-        WindowedAssociativeOp{Value}(op),
-        window,
-        Deque{Time}(),
-        false
-    )
 end
 
 """

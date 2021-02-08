@@ -46,21 +46,16 @@ mutable struct WindowedAssociativeOp{T}
     ri_previous_cumsum::Int
     values::Array{T,1}
     sum::Union{Nothing,T}
-end
 
-"""
-    WindowedAssociativeOp{T}
+    """
+        WindowedAssociativeOp{T}
 
-Create a new, empty, instance of WindowedAssociativeOp.
+    Create a new, empty, instance of WindowedAssociativeOp.
 
-# Arguments
-- `op::Function`: Any binary, associative, function.
-
-# Returns
-- `WindowedAssociativeOp{T}`: An empty instance.
-"""
-function WindowedAssociativeOp{T}(op::Function) where T
-    return WindowedAssociativeOp(op, T[], 0, T[], nothing)
+    # Arguments
+    - `op::Function`: Any binary, associative, function.
+    """
+    WindowedAssociativeOp{T}(op::Function) where T = new(op, T[], 0, T[], nothing)
 end
 
 """
