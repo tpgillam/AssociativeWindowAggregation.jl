@@ -1,7 +1,9 @@
 using Documenter, AssociativeWindowAggregation
 
 makedocs(
-    format=Documenter.HTML(prettyurls=false),
+    format=Documenter.HTML(
+        prettyurls=get(ENV, "CI", "false") == "true"
+    ),
     modules=[AssociativeWindowAggregation],
     sitename="AssociativeWindowAggregation.jl",
     pages=[
