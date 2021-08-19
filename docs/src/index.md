@@ -10,9 +10,10 @@ Accumulate binary associative operators over rolling windows.
 
 ## Assumptions and stability
 We assume that operators are associative.
-Strictly speaking this is not true for operators on floating points, however without this assumption one can do no better than `O(L)` time complexity.
-Also, for most reasonable applications this should not be a major limitation.
-As detailed below, there is no long term accumulation of errors.
+Strictly speaking this is not true for most operations on floating point numbers, however without this assumption one can do no better than `O(L)` time complexity.
+Practically, for most reasonable applications this assumption is reasonable.
+
+As detailed below, there is no long-term accumulation of errors.
 
 Note that we *do not* assume:
 - The existence of an inverse
@@ -33,8 +34,8 @@ Note that the most common `O(1)` approach to computing rolling sums uses the fol
 ```
 [
     a + b + c,
-    a + b + c + d - a,
-    a + b + c + d + e - a - b
+    a + b + c - a + d,
+    a + b + c - a + d - b + e
 ]
 ```
 This can be problematic due to overflow / underflow for most numerical types, and accumulated rounding errors in floating point types (for an extreme example, suppose `a` is `Inf`).

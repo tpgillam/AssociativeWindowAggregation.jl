@@ -70,6 +70,12 @@ end
         end
     end
 
+    @testset "random matrix multiply" begin
+        # This isn't commutative.
+        values = [rand(-5:5, (2, 2)) for _ in 1:20]
+        test_fixed_window(values, *)
+    end
+
     @testset "set union" begin
         values = [Set([x]) for x in 1:20]
         test_fixed_window(values, union)
