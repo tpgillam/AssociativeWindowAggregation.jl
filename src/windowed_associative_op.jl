@@ -42,9 +42,9 @@ window length.
 """
 mutable struct WindowedAssociativeOp{T}
     op::Function
-    previous_cumsum::Array{T,1}
+    previous_cumsum::Vector{T}
     ri_previous_cumsum::Int
-    values::Array{T,1}
+    values::Vector{T}
     sum::Union{Nothing,T}
 
     """
@@ -102,8 +102,7 @@ function update_state!(
             ))
         end
 
-        # TODO: Is there a copy here that we could avoid?
-        trimmed_reversed_values = state.values[end:-1:1 + num_values_to_remove]
+        trimmed_reversed_values = @inbounds(state.values[end:-1:1 + num_values_to_remove])
 
         # We now generate the partial sum, and set our index back to zero. values is also
         # emptied, since its information is now reflected in previous_cumsum.
@@ -151,7 +150,7 @@ function window_value(state::WindowedAssociativeOp{T})::T where T
         # Include contributions both from A and B buffers.
         # Remember that we are indexing from the back.
         index = length(state.previous_cumsum) - state.ri_previous_cumsum
-        state.op(state.previous_cumsum[index], state.sum)
+        state.op(@inbounds(state.previous_cumsum[index]), state.sum)
     end
 end
 

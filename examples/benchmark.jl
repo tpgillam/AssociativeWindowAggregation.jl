@@ -11,4 +11,4 @@ function run_example(window::Integer, num_points::Integer)
 end
 
 
-@benchmark run_example(10, 100) samples=100
+@benchmark run_example(100, 10000)
