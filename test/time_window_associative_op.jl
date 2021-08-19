@@ -5,7 +5,7 @@ function test_time_window(times, values, windows, op; approximate_equality::Bool
     TimeDiff = typeof(first(windows))
 
     for window in windows
-        state = TimeWindowAssociativeOp{Value,Time,TimeDiff}(op, window)
+        state = TimeWindowAssociativeOp{Value,op,Time,TimeDiff}(window)
         for (i, (time, value)) in enumerate(zip(times, values))
             @test update_state!(state, time, value) == state
 
@@ -35,7 +35,7 @@ end
         T = Int64
         op = +
         window = 2
-        state = TimeWindowAssociativeOp{T,typeof(window),typeof(window)}(op, window)
+        state = TimeWindowAssociativeOp{T,op,typeof(window),typeof(window)}(window)
 
         @test update_state!(state, 0, 3) == state
         @test !window_full(state)

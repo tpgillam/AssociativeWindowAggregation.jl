@@ -10,6 +10,3 @@ Accumulate result of appying binary associative operators on rolling windows.
 ## Notes
 - API is very preliminary and likely to change a lot.
 - No attempts to optimise or otherwise benchmark the algorithms has been done (yet)!
-
-## TODO
-- Fixed window for simple types would benefit from statically allocated buffers that could be reused.

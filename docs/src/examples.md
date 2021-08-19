@@ -16,7 +16,7 @@ plot(x, y; label="raw", title="Rolling means")
 
 for window in [5, 10, 20]
     # Use this to keep track of a windowed sum.
-    state = FixedWindowAssociativeOp{Float64}(+, window)
+    state = FixedWindowAssociativeOp{Float64, +}(window)
 
     z = []
     for value in y
