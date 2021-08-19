@@ -20,21 +20,20 @@ That is, at time t' this window represents the open-closed time interval (t' - w
 - `window_full::Bool`: For internal use - will be set to true once a point has dropped out
     of the window.
 """
-mutable struct TimeWindowAssociativeOp{Value,Time,TimeDiff}
-    window_state::WindowedAssociativeOp{Value}
+mutable struct TimeWindowAssociativeOp{Value,Op,Time,TimeDiff}
+    window_state::WindowedAssociativeOp{Value,Op}
     window::TimeDiff
     times::Deque{Time}
     window_full::Bool
 
-    function TimeWindowAssociativeOp{Value,Time,TimeDiff}(
-        op::Function,
+    function TimeWindowAssociativeOp{Value,Op,Time,TimeDiff}(
         window::TimeDiff
-    ) where {Value,Time,TimeDiff}
+    ) where {Value,Op,Time,TimeDiff}
         if window <= zero(TimeDiff)
             throw(ArgumentError("Got window $window, but it must be positive."))
         end
         return new(
-            WindowedAssociativeOp{Value}(op),
+            WindowedAssociativeOp{Value,Op}(),
             window,
             Deque{Time}(),
             false
@@ -60,11 +59,7 @@ are no longer in the time window.
 # Returns
 - `::TimeWindowAssociativeOp{Value,Time,TimeDiff}`: `state`, which has been mutated.
 """
-function update_state!(
-    state::TimeWindowAssociativeOp{Value,Time,TimeDiff},
-    time,
-    value
-)::TimeWindowAssociativeOp{Value,Time,TimeDiff} where {Value,Time,TimeDiff}
+function update_state!(state::TimeWindowAssociativeOp, time, value)
     if !isempty(state.times) && time <= last(state.times)
         throw(ArgumentError(
             "Got out-of-order time $time. Previous time was $(last(state.times))"

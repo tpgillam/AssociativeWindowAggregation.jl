@@ -1,5 +1,5 @@
 """
-    WindowedAssociativeOp{T}
+    WindowedAssociativeOp{T,Op}
 
 State associated with a windowed aggregation of a binary associative operator,
 in a numerically accurate fashion.
@@ -32,56 +32,59 @@ cumulative sums. We create a new, empty, `B`.
 `O(1)` amortized runtime complexity, and `O(L)` space complexity, where `L` is the typical
 window length.
 
+# Type parameters
+- `T`: The type of the values of the array.
+- `Op`: Any binary, associative, function.
+
 # Fields
-- `op::Function`: Any binary, associative, function.
-- `previous_cumsum::Array{T, 1}`: Corresponds to array `A` above.
+- `previous_cumsum::Vector{T}`: Corresponds to array `A` above.
 - `ri_previous_cumsum::Int`: A reverse index into `previous_cumsum`, once it contains
     values. It should be subtracted from `end` in order to obtain the appropriate index.
-- `values::Array{T, 1}`: Corresponds to array `B` above.
+- `values::Vector{T}`: Corresponds to array `B` above.
 - `sum::Union{Nothing, T}`: The sum of the elements in values.
 """
-mutable struct WindowedAssociativeOp{T}
-    op::Function
-    previous_cumsum::Array{T,1}
+mutable struct WindowedAssociativeOp{T,Op}
+    previous_cumsum::Vector{T}
     ri_previous_cumsum::Int
-    values::Array{T,1}
+    values::Vector{T}
     sum::Union{Nothing,T}
 
     """
-        WindowedAssociativeOp{T}
+        WindowedAssociativeOp{T,Op}
 
     Create a new, empty, instance of WindowedAssociativeOp.
 
-    # Arguments
-    - `op::Function`: Any binary, associative, function.
+    # Type parameters
+    - `T`: The type of the values of the array.
+    - `Op`: Any binary, associative, function.
     """
-    WindowedAssociativeOp{T}(op::Function) where T = new(op, T[], 0, T[], nothing)
+    WindowedAssociativeOp{T,Op}() where {T,Op} = new{T,Op}(T[], 0, T[], nothing)
 end
 
 """
     update_state!(
-        state::WindowedAssociativeOp{T},
+        state::WindowedAssociativeOp{T,Op},
         value,
         num_dropped_from_window::Integer
-    )::WindowedAssociativeOp{T} where T
+    )::WindowedAssociativeOp{T,Op} where {T,Op}
 
 Add the specified value to the state, drop some number of elements from the start of the
 window, and return `state` (which will have been mutated).
 
 # Arguments
-- `state::WindowedAssociativeOp{T}`: The state to update (will be mutated).
+- `state::WindowedAssociativeOp{T,Op}`: The state to update (will be mutated).
 - `value`: The value to add to the end of the window - must be convertible to a `T`.
 - `num_dropped_from_window::Integer`: The number of elements to remove from the front of
     the window.
 
 # Returns
-- `::WindowedAssociativeOp{T}`: The instance `state` that was passed in.
+- `::WindowedAssociativeOp{T,Op}`: The instance `state` that was passed in.
 """
 function update_state!(
-    state::WindowedAssociativeOp{T},
+    state::WindowedAssociativeOp{T,Op},
     value,
     num_dropped_from_window::Integer
-)::WindowedAssociativeOp{T} where T
+)::WindowedAssociativeOp{T,Op} where {T,Op}
     # Our index into previous_cumsum is advanced by the number of values we drop from the
     # window.
     state.ri_previous_cumsum += num_dropped_from_window
@@ -102,9 +105,6 @@ function update_state!(
             ))
         end
 
-        # TODO: Is there a copy here that we could avoid?
-        trimmed_reversed_values = state.values[end:-1:1 + num_values_to_remove]
-
         # We now generate the partial sum, and set our index back to zero. values is also
         # emptied, since its information is now reflected in previous_cumsum.
         # NOTE: We need to take care here in the case of non-commutation. In accumulate, we
@@ -115,17 +115,36 @@ function update_state!(
         # but we actually want:
         #
         #    (x0, op(x1, x0), op(x2, op(x1, x0)), ...)
-        state.previous_cumsum = accumulate(
-            (x, y) -> state.op(y, x),
-            trimmed_reversed_values
-        )
+
+        # Conceptually the following code is equivalent to the following, however avoids
+        # unnecessary allocations:
+        # trimmed_reversed_values = state.values[end:-1:1 + num_values_to_remove]
+        # state.previous_cumsum = accumulate(
+        #     (x, y) -> Op(y, x),
+        #     trimmed_reversed_values
+        # )
+
+        empty!(state.previous_cumsum)
+        upper = length(state.values)
+        lower = 1 + num_values_to_remove
+        if (upper - lower) >= 0  # i.e. we have a non-zero range
+            i = upper
+            accumulation = @inbounds(state.values[i])
+            while true
+                push!(state.previous_cumsum, accumulation)
+                i -= 1
+                i >= lower || break
+                accumulation = Op(@inbounds(state.values[i]), accumulation)
+            end
+        end
+
         state.ri_previous_cumsum = 0
-        state.values = T[]
+        empty!(state.values)
         # state.sum is now garbage, but we are not going to use it before we recompute it.
     end
 
     # Include the new value in sum and values.
-    state.sum = length(state.values) == 0 ? value : state.op(state.sum, value)
+    state.sum = length(state.values) == 0 ? value : Op(state.sum, value)
     push!(state.values, value)
 
     return state
@@ -133,17 +152,17 @@ end
 
 
 """
-    window_value(state::WindowedAssociativeOp{T})::T where T
+    window_value(state::WindowedAssociativeOp{T,Op})::T where T
 
 Get the value currently represented by the state.
 
 # Arguments:
-- `state::WindowedAssociativeOp{T}`: The state to query.
+- `state::WindowedAssociativeOp{T,Op}`: The state to query.
 
 # Returns:
 - `T`: The result of aggregating over the values in the window.
 """
-function window_value(state::WindowedAssociativeOp{T})::T where T
+function window_value(state::WindowedAssociativeOp{T,Op})::T where {T,Op}
     return if length(state.previous_cumsum) == 0
         # The A buffer is empty, so we need only worry about the 'B' buffer.
         state.sum
@@ -151,22 +170,22 @@ function window_value(state::WindowedAssociativeOp{T})::T where T
         # Include contributions both from A and B buffers.
         # Remember that we are indexing from the back.
         index = length(state.previous_cumsum) - state.ri_previous_cumsum
-        state.op(state.previous_cumsum[index], state.sum)
+        Op(@inbounds(state.previous_cumsum[index]), state.sum)
     end
 end
 
 """
-    function window_size(state::WindowedAssociativeOp{T})::Int where T
+    function window_size(state::WindowedAssociativeOp)::Int
 
 Get the current size of the window in `state`.
 
 # Arguments:
-- `state::WindowedAssociativeOp{T}`: The state to query.
+- `state::WindowedAssociativeOp`: The state to query.
 
 # Returns:
 - `Int`: The current size of the window.
 """
-function window_size(state::WindowedAssociativeOp{T})::Int where T
+function window_size(state::WindowedAssociativeOp)::Int
     return if length(state.previous_cumsum) == 0
         # The A buffer is empty, so we need only worry about the 'B' buffer.
         length(state.values)
