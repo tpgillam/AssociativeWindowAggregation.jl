@@ -6,8 +6,8 @@ Here we show a computation of the rolling mean over fixed windows. We use a
 length, only including values where the window has filled.
 
 ```@example mean
-using Plots
 using AssociativeWindowAggregation
+using Plots
 
 x = range(1, 10; length=100)
 y = sin.(x) + 0.5 * rand(length(x))
@@ -30,5 +30,7 @@ for window in [5, 10, 20]
 
     plot!(x, z; label="mean $window", lw=2)
 end
-current()
+savefig("mean-plot.svg"); nothing # hide
 ```
+
+![](mean-plot.svg)
