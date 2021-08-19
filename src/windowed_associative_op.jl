@@ -102,8 +102,6 @@ function update_state!(
             ))
         end
 
-        trimmed_reversed_values = @inbounds(state.values[end:-1:1 + num_values_to_remove])
-
         # We now generate the partial sum, and set our index back to zero. values is also
         # emptied, since its information is now reflected in previous_cumsum.
         # NOTE: We need to take care here in the case of non-commutation. In accumulate, we
@@ -114,12 +112,31 @@ function update_state!(
         # but we actually want:
         #
         #    (x0, op(x1, x0), op(x2, op(x1, x0)), ...)
-        state.previous_cumsum = accumulate(
-            (x, y) -> state.op(y, x),
-            trimmed_reversed_values
-        )
+
+        # Conceptually the following code is equivalent to the following, however avoids
+        # unnecessary allocations.
+        # trimmed_reversed_values = @inbounds(state.values[end:-1:1 + num_values_to_remove])
+        # state.previous_cumsum = accumulate(
+        #     (x, y) -> state.op(y, x),
+        #     trimmed_reversed_values
+        # )
+
+        empty!(state.previous_cumsum)
+        upper = length(state.values)
+        lower = 1 + num_values_to_remove
+        if (upper - lower) >= 0  # i.e. we have a non-zero range
+            i = upper
+            accumulation = @inbounds(state.values[i])
+            while true
+                push!(state.previous_cumsum, accumulation)
+                i -= 1
+                i >= lower || break
+                accumulation = state.op(@inbounds(state.values[i]), accumulation)
+            end
+        end
+
         state.ri_previous_cumsum = 0
-        state.values = T[]
+        empty!(state.values)
         # state.sum is now garbage, but we are not going to use it before we recompute it.
     end
 
