@@ -8,5 +8,5 @@
 Accumulate result of appying binary associative operators on rolling windows.
 
 ## Notes
-- API is very preliminary and likely to change a lot.
-- No attempts to optimise or otherwise benchmark the algorithms has been done (yet)!
+- API is preliminary and liable to change.
+- Some optimisation has been performed, however there is likely still room for improvement, especially for the fixed-window case.

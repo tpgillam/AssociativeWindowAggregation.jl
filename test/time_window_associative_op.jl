@@ -70,5 +70,10 @@ end
         end
     end
 
-    # TODO: more tests
+    @testset "random matrix multiply" begin
+        times = [DateTime(2000, 1, x) for x in 1:20]
+        values = [rand(-5:5, (2, 2)) for _ in 1:20]
+        windows = [Dates.Day(x) for x in 1:30]
+        test_time_window(times, values, windows, *)
+    end
 end
