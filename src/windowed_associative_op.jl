@@ -99,14 +99,14 @@ Base.@propagate_inbounds function update_state!(
 
     # If this has taken us out-of-range of the _previous_cumsum values, we must recompute
     # them.
-    elements_remaining = length(state.previous_cumsum) - (state.ri_previous_cumsum + 1)
+    elements_remaining = length(state.previous_cumsum) - state.ri_previous_cumsum
 
     if elements_remaining < 0
         # We have overshot the end of previous_cumsum.
 
         # We may also need to discard elements from values. This could happen if
         # num_dropped_from_window > 1.
-        num_values_to_remove = - elements_remaining - 1
+        num_values_to_remove = - elements_remaining
         @boundscheck if num_values_to_remove > length(state.values)
             throw(ArgumentError(
                 "num_dropped_from_window = $num_dropped_from_window is out of range"
@@ -154,7 +154,6 @@ Base.@propagate_inbounds function update_state!(
     # Include the new value in sum and values.
     state.sum = length(state.values) == 0 ? value : Op(state.sum, value)
     push!(state.values, value)
-
     return state
 end
 
@@ -170,13 +169,14 @@ Get the value currently represented by the state.
 - `T`: The result of aggregating over the values in the window.
 """
 function window_value(state::WindowedAssociativeOp{T,Op})::T where {T,Op}
-    return if length(state.previous_cumsum) == 0
-        # The A buffer is empty, so we need only worry about the 'B' buffer.
+    # Include contributions both from A and B buffers.
+    # Remember that we are indexing from the back.
+    index = length(state.previous_cumsum) - state.ri_previous_cumsum
+    return if index == 0
+        # We aren't using the A buffer, either because values is full or the A buffer has
+        # not yet been populated.
         state.sum
     else
-        # Include contributions both from A and B buffers.
-        # Remember that we are indexing from the back.
-        index = length(state.previous_cumsum) - state.ri_previous_cumsum
         Op(@inbounds(state.previous_cumsum[index]), state.sum)
     end
 end
@@ -193,13 +193,8 @@ Get the current size of the window in `state`.
 - `Int`: The current size of the window.
 """
 function window_size(state::WindowedAssociativeOp)::Int
-    return if length(state.previous_cumsum) == 0
-        # The A buffer is empty, so we need only worry about the 'B' buffer.
-        length(state.values)
-    else
-        # Include contributions both from A and B buffers.
-        # Remember that we are indexing from the back.
-        index = length(state.previous_cumsum) - state.ri_previous_cumsum
-        length(state.values) + index
-    end
+    # Include contributions both from A and B buffers.
+    # Remember that we are indexing from the back.
+    index = length(state.previous_cumsum) - state.ri_previous_cumsum
+    return length(state.values) + index
 end
