@@ -25,7 +25,10 @@ mutable struct FixedWindowAssociativeOp{T,Op}
         if window < 1
             throw(ArgumentError("Got window $window, but it must be positive."))
         end
-        return new(WindowedAssociativeOp{T,Op}(), window)
+        window_state = WindowedAssociativeOp{T,Op}()
+        sizehint!(window_state.previous_cumsum, window)
+        sizehint!(window_state.values, window)
+        return new(window_state, window)
     end
 end
 
