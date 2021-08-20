@@ -9,4 +9,4 @@ Accumulate result of appying binary associative operators on rolling windows.
 
 The algorithm is constant time with respect to the window length, and is numerically stable. 
 Details can be found in the [documentation](https://tpgillam.github.io/AssociativeWindowAggregation.jl/dev). 
-For demonstrations of use of the package, see the [examples](https://tpgillam.github.io/AssociativeWindowAggregation.jl/dev/examples).
+For demonstrations, see the [documentation examples](https://tpgillam.github.io/AssociativeWindowAggregation.jl/dev/examples) as well as the project under `examples/`.

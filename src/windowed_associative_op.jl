@@ -35,31 +35,39 @@ window length.
 # Type parameters
 - `T`: The type of the values of the array.
 - `Op`: Any binary, associative, function.
+- `V`: The abstract vector subtype used for internal state.
 
 # Fields
 - `previous_cumsum::Vector{T}`: Corresponds to array `A` above.
 - `ri_previous_cumsum::Int`: A reverse index into `previous_cumsum`, once it contains
     values. It should be subtracted from `end` in order to obtain the appropriate index.
 - `values::Vector{T}`: Corresponds to array `B` above.
-- `sum::Union{Nothing, T}`: The sum of the elements in values.
+- `sum::T`: The sum of the elements in values.
 """
-mutable struct WindowedAssociativeOp{T,Op}
-    previous_cumsum::Vector{T}
+mutable struct WindowedAssociativeOp{T,Op,V <: AbstractVector{T}}
+    previous_cumsum::V
     ri_previous_cumsum::Int
-    values::Vector{T}
-    sum::Union{Nothing,T}
+    values::V
+    sum::T  # Will start uninitialised.
 
-    """
-        WindowedAssociativeOp{T,Op}
-
-    Create a new, empty, instance of WindowedAssociativeOp.
-
-    # Type parameters
-    - `T`: The type of the values of the array.
-    - `Op`: Any binary, associative, function.
-    """
-    WindowedAssociativeOp{T,Op}() where {T,Op} = new{T,Op}(T[], 0, T[], nothing)
+    function WindowedAssociativeOp{T,Op,V}(
+        previous_cumsum::V,
+        values::V
+    ) where {T,Op,V <: AbstractVector{T}}
+        return new{T,Op,V}(previous_cumsum, 0, values)
+    end
 end
+
+"""
+    WindowedAssociativeOp{T,Op}
+
+Create a new, empty, instance of WindowedAssociativeOp.
+
+# Type parameters
+- `T`: The type of the values of the array.
+- `Op`: Any binary, associative, function.
+"""
+WindowedAssociativeOp{T,Op}() where {T,Op} = WindowedAssociativeOp{T,Op,Vector{T}}(T[], T[])
 
 """
     update_state!(
@@ -84,7 +92,7 @@ function update_state!(
     state::WindowedAssociativeOp{T,Op},
     value,
     num_dropped_from_window::Integer
-)::WindowedAssociativeOp{T,Op} where {T,Op}
+) where {T,Op}
     # Our index into previous_cumsum is advanced by the number of values we drop from the
     # window.
     state.ri_previous_cumsum += num_dropped_from_window
@@ -149,7 +157,6 @@ function update_state!(
 
     return state
 end
-
 
 """
     window_value(state::WindowedAssociativeOp{T,Op})::T where T
