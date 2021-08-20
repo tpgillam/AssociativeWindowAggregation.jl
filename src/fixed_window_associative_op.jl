@@ -52,7 +52,9 @@ function update_state!(state::FixedWindowAssociativeOp, value)
         1
     end
 
-    update_state!(state.window_state, value, num_dropped_from_window)
+    # With @inbounds, we assert that num_dropped_from_window will never exceed the size of
+    # the window.
+    @inbounds update_state!(state.window_state, value, num_dropped_from_window)
     return state
 end
 
