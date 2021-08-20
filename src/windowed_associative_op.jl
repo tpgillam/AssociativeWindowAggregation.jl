@@ -88,7 +88,7 @@ window, and return `state` (which will have been mutated).
 # Returns
 - `::WindowedAssociativeOp{T,Op}`: The instance `state` that was passed in.
 """
-function update_state!(
+Base.@propagate_inbounds function update_state!(
     state::WindowedAssociativeOp{T,Op},
     value,
     num_dropped_from_window::Integer
@@ -107,7 +107,7 @@ function update_state!(
         # We may also need to discard elements from values. This could happen if
         # num_dropped_from_window > 1.
         num_values_to_remove = - elements_remaining - 1
-        if num_values_to_remove > length(state.values)
+        @boundscheck if num_values_to_remove > length(state.values)
             throw(ArgumentError(
                 "num_dropped_from_window = $num_dropped_from_window is out of range"
             ))
