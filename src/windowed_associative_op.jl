@@ -47,7 +47,7 @@ mutable struct WindowedAssociativeOp{T,Op}
     previous_cumsum::Vector{T}
     ri_previous_cumsum::Int
     values::Vector{T}
-    sum::Union{Nothing,T}
+    sum::T  # Will start uninitialised.
 
     """
         WindowedAssociativeOp{T,Op}
@@ -58,7 +58,7 @@ mutable struct WindowedAssociativeOp{T,Op}
     - `T`: The type of the values of the array.
     - `Op`: Any binary, associative, function.
     """
-    WindowedAssociativeOp{T,Op}() where {T,Op} = new{T,Op}(T[], 0, T[], nothing)
+    WindowedAssociativeOp{T,Op}() where {T,Op} = new{T,Op}(T[], 0, T[])
 end
 
 """
