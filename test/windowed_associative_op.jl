@@ -1,6 +1,6 @@
 @testset "WindowedAssociativeOp" begin
     @testset "empty" begin
-        for T in [Float64, Bool, Array{Float64, 1}]
+        for T in [Float64, Bool, Array{Float64,1}]
             for op in [+, -, *]
                 state = WindowedAssociativeOp{T,op}()
                 @test state.previous_cumsum == T[]

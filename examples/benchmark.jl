@@ -19,7 +19,6 @@ function run_rolling(window::Integer, data::Vector{Int})
     return rolling(sum, data, window)
 end
 
-
 data = rand(-100:100, 100000)
 window = 200
 

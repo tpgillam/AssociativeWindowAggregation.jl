@@ -65,7 +65,7 @@ end
                 [Dates.DateTime(2000, 1, x) for x in 1:20],
                 1:20,
                 [Dates.Day(x) for x in 1:30],
-                op
+                op,
             )
         end
     end

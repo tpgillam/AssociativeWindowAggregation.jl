@@ -32,12 +32,7 @@ mutable struct TimeWindowAssociativeOp{Value,Op,Time,TimeDiff}
         if window <= zero(TimeDiff)
             throw(ArgumentError("Got window $window, but it must be positive."))
         end
-        return new(
-            WindowedAssociativeOp{Value,Op}(),
-            window,
-            Deque{Time}(),
-            false
-        )
+        return new(WindowedAssociativeOp{Value,Op}(), window, Deque{Time}(), false)
     end
 end
 
@@ -61,9 +56,11 @@ are no longer in the time window.
 """
 function update_state!(state::TimeWindowAssociativeOp, time, value)
     if !isempty(state.times) && time <= last(state.times)
-        throw(ArgumentError(
-            "Got out-of-order time $time. Previous time was $(last(state.times))"
-        ))
+        throw(
+            ArgumentError(
+                "Got out-of-order time $time. Previous time was $(last(state.times))"
+            ),
+        )
     end
 
     push!(state.times, time)

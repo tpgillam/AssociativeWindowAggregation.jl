@@ -44,16 +44,15 @@ window length.
 - `values::Vector{T}`: Corresponds to array `B` above.
 - `sum::T`: The sum of the elements in values.
 """
-mutable struct WindowedAssociativeOp{T,Op,V <: AbstractVector{T}}
+mutable struct WindowedAssociativeOp{T,Op,V<:AbstractVector{T}}
     previous_cumsum::V
     ri_previous_cumsum::Int
     values::V
     sum::T  # Will start uninitialised.
 
     function WindowedAssociativeOp{T,Op,V}(
-        previous_cumsum::V,
-        values::V
-    ) where {T,Op,V <: AbstractVector{T}}
+        previous_cumsum::V, values::V
+    ) where {T,Op,V<:AbstractVector{T}}
         return new{T,Op,V}(previous_cumsum, 0, values)
     end
 end
@@ -89,9 +88,7 @@ window, and return `state` (which will have been mutated).
 - `::WindowedAssociativeOp{T,Op}`: The instance `state` that was passed in.
 """
 Base.@propagate_inbounds function update_state!(
-    state::WindowedAssociativeOp{T,Op},
-    value,
-    num_dropped_from_window::Integer
+    state::WindowedAssociativeOp{T,Op}, value, num_dropped_from_window::Integer
 ) where {T,Op}
     # Our index into previous_cumsum is advanced by the number of values we drop from the
     # window.
@@ -106,11 +103,13 @@ Base.@propagate_inbounds function update_state!(
 
         # We may also need to discard elements from values. This could happen if
         # num_dropped_from_window > 1.
-        num_values_to_remove = - elements_remaining
+        num_values_to_remove = -elements_remaining
         @boundscheck if num_values_to_remove > length(state.values)
-            throw(ArgumentError(
-                "num_dropped_from_window = $num_dropped_from_window is out of range"
-            ))
+            throw(
+                ArgumentError(
+                    "num_dropped_from_window = $num_dropped_from_window is out of range"
+                ),
+            )
         end
 
         # We now generate the partial sum, and set our index back to zero. values is also

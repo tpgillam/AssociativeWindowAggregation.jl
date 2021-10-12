@@ -28,8 +28,7 @@ mutable struct FixedWindowAssociativeOp{T,Op}
             throw(ArgumentError("Got window $window, but it must be positive."))
         end
         window_state = WindowedAssociativeOp{T,Op,CircularBuffer{T}}(
-            CircularBuffer{T}(window - 1),
-            CircularBuffer{T}(window)
+            CircularBuffer{T}(window - 1), CircularBuffer{T}(window)
         )
         return new(window_state, window)
     end

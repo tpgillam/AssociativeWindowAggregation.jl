@@ -2,7 +2,7 @@ function test_fixed_window(values, op; approximate_equality::Bool=false)
     T = typeof(first(values))
     @test_throws ArgumentError FixedWindowAssociativeOp{T,op}(0)
 
-    for window in 1:2 * length(values)
+    for window in 1:(2 * length(values))
         state = FixedWindowAssociativeOp{T,op}(window)
         for (i, value) in enumerate(values)
             @test update_state!(state, value) == state
