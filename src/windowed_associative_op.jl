@@ -152,7 +152,7 @@ Base.@propagate_inbounds function update_state!(
     end
 
     # Include the new value in sum and values.
-    state.sum = length(state.values) == 0 ? value : Op(state.sum, value)
+    state.sum = isempty(state.values) ? value : Op(state.sum, value)
     push!(state.values, value)
     return state
 end
