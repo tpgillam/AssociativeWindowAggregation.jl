@@ -1,10 +1,16 @@
-function test_time_window(times, values, windows, op; approximate_equality::Bool=false)
+function test_time_window(
+    times, values, windows, op; op_bang=nothing, approximate_equality::Bool=false
+)
     # Work out what types we should be using for times and values
     Value = typeof(first(values))
     Time = typeof(first(times))
 
     for window in windows
-        state = TimeWindowAssociativeOp{Value,op,Time}(window)
+        state = if isnothing(op_bang)
+            TimeWindowAssociativeOp{Value,op,Time}(window)
+        else
+            TimeWindowAssociativeOp{Value,op,op_bang,Time}(window)
+        end
         for (i, (time, value)) in enumerate(zip(times, values))
             @test update_state!(state, time, value) == state
 
@@ -79,5 +85,13 @@ end
         values = [rand(-5:5, (2, 2)) for _ in 1:20]
         windows = [Dates.Day(x) for x in 1:30]
         test_time_window(times, values, windows, *)
+    end
+
+    @testset "mutating" begin
+        times = [DateTime(2000, 1, x) for x in 1:20]
+        values = [Data(1, rand(-5:5, (2, 2))) for _ in 1:20]
+        windows = [Dates.Day(x) for x in 1:30]
+        test_time_window(times, values, windows, merge)
+        test_time_window(times, values, windows, merge; op_bang=merge!)
     end
 end
