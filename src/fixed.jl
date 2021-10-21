@@ -1,7 +1,8 @@
 using DataStructures: CircularBuffer
 
 """
-    FixedWindowAssociativeOp{T,Op,OpL!,OpR!}
+    FixedWindowAssociativeOp{T,Op,OpL!,OpR!}(window)
+    FixedWindowAssociativeOp{T,Op}(window)
 
 State necessary for accumulation over a rolling window of fixed size.
 
@@ -31,7 +32,7 @@ function FixedWindowAssociativeOp{T,Op}(window) where {T,Op}
 end
 
 """
-    update_state!(state::FixedWindowAssociativeOp, value)
+    update_state!(state::FixedWindowAssociativeOp, value) -> state
 
 Add the specified `value` to the `state`. Drop a value from the window iff the window is
 full.

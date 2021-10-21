@@ -1,7 +1,8 @@
 using DataStructures: Deque
 
 """
-    TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time,TimeDiff}
+    TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time}(window::TimeDiff)
+    TimeWindowAssociativeOp{Value,Op,Time}(window::TimeDiff)
 
 State necessary for accumulation over a rolling window of fixed size, in terms of time.
 
@@ -11,6 +12,8 @@ satisfy:
     t > t' - w
 
 That is, at time t' this window represents the open-closed time interval (t' - w, t']
+
+We require that `window` be of a type that, when added to a `Time`, gives a `Time`.
 
 # Fields
 - `window_state::WindowedAssociativeOp{Value}`: The underlying general-window state.
@@ -26,39 +29,40 @@ mutable struct TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time,TimeDiff}
     times::Deque{Time}
     window_full::Bool
 
-    function TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time,TimeDiff}(
+    function TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time}(
         window::TimeDiff
     ) where {Value,Op,OpL!,OpR!,Time,TimeDiff}
+        # Verify that TimeDiff and Time are compatible.
+        ret_types = Base.return_types(+, (Time, TimeDiff))
+        isempty(ret_types) && throw(ArgumentError("Incompatible: $Time and $TimeDiff"))
+        only(ret_types) == Time || throw(ArgumentError("Incompatible: $Time and $TimeDiff"))
+
         if window <= zero(TimeDiff)
             throw(ArgumentError("Got window $window, but it must be positive."))
         end
-        return new(
+        return new{Value,Op,OpL!,OpR!,Time,TimeDiff}(
             WindowedAssociativeOp{Value,Op,OpL!,OpR!}(), window, Deque{Time}(), false
         )
     end
 end
 
-function TimeWindowAssociativeOp{T,Op,Time,TimeDiff}(window) where {T,Op,Time,TimeDiff}
-    return TimeWindowAssociativeOp{T,Op,Op,Op,Time,TimeDiff}(window)
+function TimeWindowAssociativeOp{T,Op,Time}(window::TimeDiff) where {T,Op,Time,TimeDiff}
+    return TimeWindowAssociativeOp{T,Op,Op,Op,Time}(window)
 end
 
 """
-    update_state!(
-        state::TimeWindowAssociativeOp{Value,Time,TimeDiff},
-        time,
-        value
-    )::TimeWindowAssociativeOp{Value,Time,TimeDiff} where {Value,Time,TimeDiff}
+    update_state!(state::TimeWindowAssociativeOp, time, value) -> state
 
 Add the specified `value` to the state with associated `time`, and drop any values that
 are no longer in the time window.
 
 # Arguments
-- `state::TimeWindowAssociativeOp{Value,Time,TimeDiff}`:
+- `state::TimeWindowAssociativeOp`:
 - `time`: The time to which `value` corresponds.
 - `value`: The value to add to the window.
 
 # Returns
-- `::TimeWindowAssociativeOp{Value,Time,TimeDiff}`: `state`, which has been mutated.
+- `::TimeWindowAssociativeOp`: `state`, which has been mutated.
 """
 function update_state!(state::TimeWindowAssociativeOp, time, value)
     if !isempty(state.times) && time <= last(state.times)
@@ -75,7 +79,7 @@ function update_state!(state::TimeWindowAssociativeOp, time, value)
     # to remove from the window state.
     # This is a linear search
     num_dropped_from_window = 0
-    while first(state.times) <= time - state.window
+    while (first(state.times) + state.window) <= time
         popfirst!(state.times)
         num_dropped_from_window += 1
     end

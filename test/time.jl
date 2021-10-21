@@ -2,10 +2,9 @@ function test_time_window(times, values, windows, op; approximate_equality::Bool
     # Work out what types we should be using for times and values
     Value = typeof(first(values))
     Time = typeof(first(times))
-    TimeDiff = typeof(first(windows))
 
     for window in windows
-        state = TimeWindowAssociativeOp{Value,op,Time,TimeDiff}(window)
+        state = TimeWindowAssociativeOp{Value,op,Time}(window)
         for (i, (time, value)) in enumerate(zip(times, values))
             @test update_state!(state, time, value) == state
 
@@ -35,7 +34,7 @@ end
         T = Int64
         op = +
         window = 2
-        state = TimeWindowAssociativeOp{T,op,typeof(window),typeof(window)}(window)
+        state = TimeWindowAssociativeOp{T,op,typeof(window)}(window)
 
         @test update_state!(state, 0, 3) == state
         @test !window_full(state)
@@ -56,6 +55,11 @@ end
         @test window_full(state)
         @test window_size(state) == window
         @test window_value(state) == -1
+    end
+
+    @testset "incompatible time type" begin
+        # Time is of type Int64, but window is given as a Float64 -> this should throw.
+        @test_throws ArgumentError TimeWindowAssociativeOp{Float64,+,Int64}(10.0)
     end
 
     @testset "integral" begin
