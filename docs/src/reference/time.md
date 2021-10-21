@@ -7,5 +7,5 @@ The window is taken to be fixed in terms of time duration rather than a fixed nu
 
 ```@autodocs
 Modules = [AssociativeWindowAggregation]
-Pages = ["time_window_associative_op.jl"]
+Pages = ["time.jl"]
 ```
