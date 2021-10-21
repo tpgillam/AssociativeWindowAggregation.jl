@@ -1,14 +1,18 @@
 """
-    WindowedAssociativeOp{T,Op}
+    WindowedAssociativeOp{T,Op,OpL!,OpR!,V<:AbstractVector{T}}
 
-State associated with a windowed aggregation of a binary associative operator,
-in a numerically accurate fashion.
+State associated with a windowed aggregation of a binary associative operator.
+
+If `OpL!` and `OpR!` are not specifiied, they will default to `Op`.  However, for
+non-bitstypes, it can be beneficial to provide these methods to reduce memory allocations.
+`V` will default to a `Vector{T}`.
+
+# Method
 
 Wherever summation is discussed, we can consider any alternative binary, associative,
 operator. For example: `+, *, max, min, &&, union`
 
-NB. It is interesting to observe that commutativity is *not* required by this algorithm,
-which is one of the reasons that it enjoys stable numerical performance.
+NB. It is interesting to observe that commutativity is *not* required by this algorithm.
 
 Conceptually the window is maintained in two buffers:
 
@@ -35,7 +39,9 @@ window length.
 # Type parameters
 - `T`: The type of the values of the array.
 - `Op`: Any binary, associative, function.
-- `V`: The abstract vector subtype used for internal state.
+- `OpL!`: OpL!(x, y) will perform `x + y`, storing the result in `x`.
+- `OpR!`: OpR!(x, y) will perform `x + y`, storing the result in `y`.
+- `V`: The subtype of AbstractVector{T} used for internal state.
 
 # Fields
 - `previous_cumsum::Vector{T}`: Corresponds to array `A` above.
@@ -44,52 +50,47 @@ window length.
 - `values::Vector{T}`: Corresponds to array `B` above.
 - `sum::T`: The sum of the elements in values.
 """
-mutable struct WindowedAssociativeOp{T,Op,V<:AbstractVector{T}}
+mutable struct WindowedAssociativeOp{T,Op,OpL!,OpR!,V<:AbstractVector{T}}
     previous_cumsum::V
     ri_previous_cumsum::Int
     values::V
     sum::T  # Will start uninitialised.
 
-    function WindowedAssociativeOp{T,Op,V}(
+    function WindowedAssociativeOp{T,Op,OpL!,OpR!,V}(
         previous_cumsum::V, values::V
-    ) where {T,Op,V<:AbstractVector{T}}
-        return new{T,Op,V}(previous_cumsum, 0, values)
+    ) where {T,Op,OpL!,OpR!,V<:AbstractVector{T}}
+        return new{T,Op,OpL!,OpR!,V}(previous_cumsum, 0, values)
     end
 end
 
-"""
-    WindowedAssociativeOp{T,Op}
+function WindowedAssociativeOp{T,Op,OpL!,OpR!}() where {T,Op,OpL!,OpR!}
+    return WindowedAssociativeOp{T,Op,OpL!,OpR!,Vector{T}}(T[], T[])
+end
+WindowedAssociativeOp{T,Op}() where {T,Op} = WindowedAssociativeOp{T,Op,Op,Op}()
 
-Create a new, empty, instance of WindowedAssociativeOp.
-
-# Type parameters
-- `T`: The type of the values of the array.
-- `Op`: Any binary, associative, function.
-"""
-WindowedAssociativeOp{T,Op}() where {T,Op} = WindowedAssociativeOp{T,Op,Vector{T}}(T[], T[])
 
 """
     update_state!(
-        state::WindowedAssociativeOp{T,Op},
+        state::WindowedAssociativeOp,
         value,
         num_dropped_from_window::Integer
-    )::WindowedAssociativeOp{T,Op} where {T,Op}
+    ) -> state
 
 Add the specified value to the state, drop some number of elements from the start of the
 window, and return `state` (which will have been mutated).
 
 # Arguments
-- `state::WindowedAssociativeOp{T,Op}`: The state to update (will be mutated).
+- `state::WindowedAssociativeOp`: The state to update (will be mutated).
 - `value`: The value to add to the end of the window - must be convertible to a `T`.
 - `num_dropped_from_window::Integer`: The number of elements to remove from the front of
     the window.
 
 # Returns
-- `::WindowedAssociativeOp{T,Op}`: The instance `state` that was passed in.
+- The instance `state` that was passed in.
 """
 Base.@propagate_inbounds function update_state!(
-    state::WindowedAssociativeOp{T,Op}, value, num_dropped_from_window::Integer
-) where {T,Op}
+    state::WindowedAssociativeOp{T,Op,OpL!,OpR!}, value, num_dropped_from_window::Integer
+) where {T,Op,OpL!,OpR!}
     # Our index into previous_cumsum is advanced by the number of values we drop from the
     # window.
     state.ri_previous_cumsum += num_dropped_from_window
@@ -141,7 +142,7 @@ Base.@propagate_inbounds function update_state!(
                 push!(state.previous_cumsum, accumulation)
                 i -= 1
                 i >= lower || break
-                accumulation = Op(@inbounds(state.values[i]), accumulation)
+                accumulation = OpR!(@inbounds(state.values[i]), accumulation)
             end
         end
 
@@ -151,18 +152,18 @@ Base.@propagate_inbounds function update_state!(
     end
 
     # Include the new value in sum and values.
-    state.sum = isempty(state.values) ? value : Op(state.sum, value)
+    state.sum = isempty(state.values) ? value : OpL!(state.sum, value)
     push!(state.values, value)
     return state
 end
 
 """
-    window_value(state::WindowedAssociativeOp{T,Op})::T where T
+    window_value(state::WindowedAssociativeOp{T})::T where T
 
 Get the value currently represented by the state.
 
 # Arguments:
-- `state::WindowedAssociativeOp{T,Op}`: The state to query.
+- `state::WindowedAssociativeOp{T}`: The state to query.
 
 # Returns:
 - `T`: The result of aggregating over the values in the window.

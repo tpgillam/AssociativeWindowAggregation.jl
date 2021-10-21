@@ -1,7 +1,7 @@
 using DataStructures: Deque
 
 """
-    TimeWindowAssociativeOp{Value, Time, TimeDiff}
+    TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time,TimeDiff}
 
 State necessary for accumulation over a rolling window of fixed size, in terms of time.
 
@@ -20,20 +20,26 @@ That is, at time t' this window represents the open-closed time interval (t' - w
 - `window_full::Bool`: For internal use - will be set to true once a point has dropped out
     of the window.
 """
-mutable struct TimeWindowAssociativeOp{Value,Op,Time,TimeDiff}
-    window_state::WindowedAssociativeOp{Value,Op}
+mutable struct TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time,TimeDiff}
+    window_state::WindowedAssociativeOp{Value,Op,OpL!,OpR!}
     window::TimeDiff
     times::Deque{Time}
     window_full::Bool
 
-    function TimeWindowAssociativeOp{Value,Op,Time,TimeDiff}(
+    function TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time,TimeDiff}(
         window::TimeDiff
-    ) where {Value,Op,Time,TimeDiff}
+    ) where {Value,Op,OpL!,OpR!,Time,TimeDiff}
         if window <= zero(TimeDiff)
             throw(ArgumentError("Got window $window, but it must be positive."))
         end
-        return new(WindowedAssociativeOp{Value,Op}(), window, Deque{Time}(), false)
+        return new(
+            WindowedAssociativeOp{Value,Op,OpL!,OpR!}(), window, Deque{Time}(), false
+        )
     end
+end
+
+function TimeWindowAssociativeOp{T,Op,Time,TimeDiff}(window) where {T,Op,Time,TimeDiff}
+    return TimeWindowAssociativeOp{T,Op,Op,Op,Time,TimeDiff}(window)
 end
 
 """
