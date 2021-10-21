@@ -10,3 +10,6 @@ Accumulate result of appying binary associative operators on rolling windows.
 The algorithm is constant time with respect to the window length, and is numerically stable. 
 Details can be found in the [documentation](https://tpgillam.github.io/AssociativeWindowAggregation.jl/dev). 
 For demonstrations, see the [documentation examples](https://tpgillam.github.io/AssociativeWindowAggregation.jl/dev/examples) as well as the project under `examples/`.
+
+The windowed algorithm is well suited for use with [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl).
+An [example](https://tpgillam.github.io/AssociativeWindowAggregation.jl/dev/examples/#OnlineStats.jl) of this combination is in the documentation.
