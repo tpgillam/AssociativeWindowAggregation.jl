@@ -81,3 +81,35 @@ savefig("mean-plot-2.svg"); nothing # hide
 ```
 
 ![](mean-plot-2.svg)
+
+## OnlineStats.jl
+
+Many of the estimators from [OnlineStats.jl](https://github.com/joshday/OnlineStats.jl) can be merged associatively.
+Therefore, we can compute online windowed versions of these statistics easily with this framework.
+
+Here is a simple example computing an online windowed standard deviation.
+
+```@example onlinestats
+using AssociativeWindowAggregation
+using OnlineStatsBase
+using Plots
+using Statistics
+
+# Use a window of 100 values.
+state = FixedWindowAssociativeOp{Variance,merge,merge!}(100)
+
+function _wrap(v) 
+    x = Variance()
+    fit!(x, v)
+    return x
+end
+
+values = rand(1000) .- 0.5
+output = [std(window_value(update_state!(state, _wrap(v)))) for v in values]
+
+plot(values; alpha=0.4, label="Input")
+plot!(output; label="std (window=100)")
+savefig("std-plot.svg"); nothing # hide
+```
+
+![](std-plot.svg)
