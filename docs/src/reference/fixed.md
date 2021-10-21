@@ -4,5 +4,5 @@ A state to represent a window with a fixed capacity. It will start off empty, ca
 
 ```@autodocs
 Modules = [AssociativeWindowAggregation]
-Pages = ["fixed_window_associative_op.jl"]
+Pages = ["fixed.jl"]
 ```

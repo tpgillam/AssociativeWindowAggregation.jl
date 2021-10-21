@@ -6,5 +6,5 @@ Every time a new value is pushed onto the end of the window, we must specify how
 
 ```@autodocs
 Modules = [AssociativeWindowAggregation]
-Pages = ["windowed_associative_op.jl"]
+Pages = ["base.jl"]
 ```

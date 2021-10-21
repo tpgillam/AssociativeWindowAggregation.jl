@@ -15,10 +15,7 @@ function run_example(window::Integer, data::Vector{Int})
     return result
 end
 
-function run_rolling(window::Integer, data::Vector{Int})
-    return rolling(sum, data, window)
-end
-
+run_rolling(window::Integer, data::Vector{Int}) = rolling(sum, data, window)
 
 data = rand(-100:100, 100000)
 window = 200

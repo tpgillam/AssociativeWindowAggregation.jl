@@ -1,7 +1,8 @@
 using DataStructures: CircularBuffer
 
 """
-    FixedWindowAssociativeOp{T,Op}
+    FixedWindowAssociativeOp{T,Op,Op!}(window)
+    FixedWindowAssociativeOp{T,Op}(window)
 
 State necessary for accumulation over a rolling window of fixed size.
 
@@ -11,32 +12,27 @@ State necessary for accumulation over a rolling window of fixed size.
     be set to the window size, and will then reduce for every value added until it reaches
     zero.
 """
-mutable struct FixedWindowAssociativeOp{T,Op}
-    window_state::WindowedAssociativeOp{T,Op,CircularBuffer{T}}
+mutable struct FixedWindowAssociativeOp{T,Op,Op!}
+    window_state::WindowedAssociativeOp{T,Op,Op!,CircularBuffer{T}}
     remaining_window::Int
 
-    """
-        FixedWindowAssociativeOp{T,Op}
-
-    Construct a new empty instance of `FixedWindowAssociativeOp`.
-
-    # Arguments
-    - `window::Integer`: The fixed window size.
-    """
-    function FixedWindowAssociativeOp{T,Op}(window::Integer) where {T,Op}
-        if window < 1
-            throw(ArgumentError("Got window $window, but it must be positive."))
-        end
-        window_state = WindowedAssociativeOp{T,Op,CircularBuffer{T}}(
-            CircularBuffer{T}(window),
-            CircularBuffer{T}(window)
+    function FixedWindowAssociativeOp{T,Op,Op!}(
+        window::Integer
+    ) where {T,Op,Op!}
+        window < 1 && throw(ArgumentError("Got window $window, but it must be positive."))
+        window_state = WindowedAssociativeOp{T,Op,Op!,CircularBuffer{T}}(
+            CircularBuffer{T}(window - 1), CircularBuffer{T}(window)
         )
         return new(window_state, window)
     end
 end
 
+function FixedWindowAssociativeOp{T,Op}(window) where {T,Op}
+    return FixedWindowAssociativeOp{T,Op,Op}(window)
+end
+
 """
-    update_state!(state::FixedWindowAssociativeOp, value)
+    update_state!(state::FixedWindowAssociativeOp, value) -> state
 
 Add the specified `value` to the `state`. Drop a value from the window iff the window is
 full.
