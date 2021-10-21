@@ -168,6 +168,8 @@ end
 
 Get the value currently represented by the state.
 
+Behaviour is undefined if this is called when the window is empty.
+
 # Arguments:
 - `state::WindowedAssociativeOp{T}`: The state to query.
 
