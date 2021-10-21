@@ -1,7 +1,7 @@
 using DataStructures: Deque
 
 """
-    TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time}(window::TimeDiff)
+    TimeWindowAssociativeOp{Value,Op,Op!,Time}(window::TimeDiff)
     TimeWindowAssociativeOp{Value,Op,Time}(window::TimeDiff)
 
 State necessary for accumulation over a rolling window of fixed size, in terms of time.
@@ -23,15 +23,15 @@ We require that `window` be of a type that, when added to a `Time`, gives a `Tim
 - `window_full::Bool`: For internal use - will be set to true once a point has dropped out
     of the window.
 """
-mutable struct TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time,TimeDiff}
-    window_state::WindowedAssociativeOp{Value,Op,OpL!,OpR!}
+mutable struct TimeWindowAssociativeOp{Value,Op,Op!,Time,TimeDiff}
+    window_state::WindowedAssociativeOp{Value,Op,Op!}
     window::TimeDiff
     times::Deque{Time}
     window_full::Bool
 
-    function TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time}(
+    function TimeWindowAssociativeOp{Value,Op,Op!,Time}(
         window::TimeDiff
-    ) where {Value,Op,OpL!,OpR!,Time,TimeDiff}
+    ) where {Value,Op,Op!,Time,TimeDiff}
         # Verify that TimeDiff and Time are compatible.
         ret_types = Base.return_types(+, (Time, TimeDiff))
         isempty(ret_types) && throw(ArgumentError("Incompatible: $Time and $TimeDiff"))
@@ -40,14 +40,14 @@ mutable struct TimeWindowAssociativeOp{Value,Op,OpL!,OpR!,Time,TimeDiff}
         if window <= zero(TimeDiff)
             throw(ArgumentError("Got window $window, but it must be positive."))
         end
-        return new{Value,Op,OpL!,OpR!,Time,TimeDiff}(
-            WindowedAssociativeOp{Value,Op,OpL!,OpR!}(), window, Deque{Time}(), false
+        return new{Value,Op,Op!,Time,TimeDiff}(
+            WindowedAssociativeOp{Value,Op,Op!,}(), window, Deque{Time}(), false
         )
     end
 end
 
 function TimeWindowAssociativeOp{T,Op,Time}(window::TimeDiff) where {T,Op,Time,TimeDiff}
-    return TimeWindowAssociativeOp{T,Op,Op,Op,Time}(window)
+    return TimeWindowAssociativeOp{T,Op,Op,Time}(window)
 end
 
 """

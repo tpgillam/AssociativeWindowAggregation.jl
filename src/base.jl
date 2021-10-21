@@ -1,10 +1,10 @@
 """
-    WindowedAssociativeOp{T,Op,OpL!,OpR!,V<:AbstractVector{T}}
+    WindowedAssociativeOp{T,Op,Op!,V<:AbstractVector{T}}
 
 State associated with a windowed aggregation of a binary associative operator.
 
-If `OpL!` and `OpR!` are not specifiied, they will default to `Op`.  However, for
-non-bitstypes, it can be beneficial to provide these methods to reduce memory allocations.
+If `Op!` is not specifiied, it will default to `Op`.  However, for non-bitstypes, it can be
+beneficial to provide this methods to reduce memory allocations.
 `V` will default to a `Vector{T}`.
 
 # Method
@@ -39,8 +39,7 @@ window length.
 # Type parameters
 - `T`: The type of the values of the array.
 - `Op`: Any binary, associative, function.
-- `OpL!`: OpL!(x, y) will perform `x + y`, storing the result in `x`.
-- `OpR!`: OpR!(x, y) will perform `x + y`, storing the result in `y`.
+- `Op!`: Op!(x, y) will perform `x + y`, storing the result in `x`.
 - `V`: The subtype of AbstractVector{T} used for internal state.
 
 # Fields
@@ -50,24 +49,23 @@ window length.
 - `values::Vector{T}`: Corresponds to array `B` above.
 - `sum::T`: The sum of the elements in values.
 """
-mutable struct WindowedAssociativeOp{T,Op,OpL!,OpR!,V<:AbstractVector{T}}
+mutable struct WindowedAssociativeOp{T,Op,Op!,V<:AbstractVector{T}}
     previous_cumsum::V
     ri_previous_cumsum::Int
     values::V
     sum::T  # Will start uninitialised.
 
-    function WindowedAssociativeOp{T,Op,OpL!,OpR!,V}(
+    function WindowedAssociativeOp{T,Op,Op!,V}(
         previous_cumsum::V, values::V
-    ) where {T,Op,OpL!,OpR!,V<:AbstractVector{T}}
-        return new{T,Op,OpL!,OpR!,V}(previous_cumsum, 0, values)
+    ) where {T,Op,Op!,V<:AbstractVector{T}}
+        return new{T,Op,Op!,V}(previous_cumsum, 0, values)
     end
 end
 
-function WindowedAssociativeOp{T,Op,OpL!,OpR!}() where {T,Op,OpL!,OpR!}
-    return WindowedAssociativeOp{T,Op,OpL!,OpR!,Vector{T}}(T[], T[])
+function WindowedAssociativeOp{T,Op,Op!}() where {T,Op,Op!}
+    return WindowedAssociativeOp{T,Op,Op!,Vector{T}}(T[], T[])
 end
-WindowedAssociativeOp{T,Op}() where {T,Op} = WindowedAssociativeOp{T,Op,Op,Op}()
-
+WindowedAssociativeOp{T,Op}() where {T,Op} = WindowedAssociativeOp{T,Op,Op}()
 
 """
     update_state!(
@@ -89,8 +87,8 @@ window, and return `state` (which will have been mutated).
 - The instance `state` that was passed in.
 """
 Base.@propagate_inbounds function update_state!(
-    state::WindowedAssociativeOp{T,Op,OpL!,OpR!}, value, num_dropped_from_window::Integer
-) where {T,Op,OpL!,OpR!}
+    state::WindowedAssociativeOp{T,Op,Op!}, value, num_dropped_from_window::Integer
+) where {T,Op,Op!}
     # Our index into previous_cumsum is advanced by the number of values we drop from the
     # window.
     state.ri_previous_cumsum += num_dropped_from_window
@@ -142,7 +140,9 @@ Base.@propagate_inbounds function update_state!(
                 push!(state.previous_cumsum, accumulation)
                 i -= 1
                 i >= lower || break
-                accumulation = OpR!(@inbounds(state.values[i]), accumulation)
+                # If we were to use a mutating operation here, then we'd have to introduce
+                # a copy above. So there is no drawback to using the non-mutating Op.
+                accumulation = Op(@inbounds(state.values[i]), accumulation)
             end
         end
 
@@ -151,8 +151,14 @@ Base.@propagate_inbounds function update_state!(
         # state.sum is now garbage, but we are not going to use it before we recompute it.
     end
 
+    # We want to make sure that we never actually mutate any value object that we pass to
+    # `update_state!`.
+    # Note that when initialising `state.sum`, we should take a copy if our mutating `Op!`
+    # is different to `Op`. This is because we know that `Op` is necessarily non-mutating.
+    _copy(x) = (Op == Op!) ? x : deepcopy(x)
+
     # Include the new value in sum and values.
-    state.sum = isempty(state.values) ? value : OpL!(state.sum, value)
+    state.sum = isempty(state.values) ? _copy(value) : Op!(state.sum, value)
     push!(state.values, value)
     return state
 end

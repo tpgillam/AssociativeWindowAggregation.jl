@@ -1,9 +1,23 @@
-function test_fixed_window(values, op; approximate_equality::Bool=false)
+function test_fixed_window(
+    values, op; op_bang=nothing, approximate_equality::Bool=false
+)
+    # For later comparison, to ensure that we don't mutate any of these
+    values_copy = deepcopy(values)
+
     T = typeof(first(values))
-    @test_throws ArgumentError FixedWindowAssociativeOp{T,op}(0)
+
+    function makestate(window)
+        return if isnothing(op_bang)
+            FixedWindowAssociativeOp{T,op}(window)
+        else
+            FixedWindowAssociativeOp{T,op,op_bang}(window)
+        end
+    end
+
+    @test_throws ArgumentError makestate(0)
 
     for window in 1:(2 * length(values))
-        state = FixedWindowAssociativeOp{T,op}(window)
+        state = makestate(window)
         for (i, value) in enumerate(values)
             @test update_state!(state, value) == state
 
@@ -27,6 +41,8 @@ function test_fixed_window(values, op; approximate_equality::Bool=false)
             end
         end
     end
+
+    @test values == values_copy
 end
 
 @testset "FixedWindowAssociativeOp" begin
@@ -79,5 +95,11 @@ end
     @testset "set union" begin
         values = [Set([x]) for x in 1:20]
         test_fixed_window(values, union)
+    end
+
+    @testset "mutating" begin
+        values = [Data(1, rand(-5:5, (2, 2))) for _ in 1:20]
+        test_fixed_window(values, merge)
+        test_fixed_window(values, merge; op_bang=merge!)
     end
 end
