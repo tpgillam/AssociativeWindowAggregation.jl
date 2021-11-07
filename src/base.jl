@@ -1,11 +1,15 @@
 """
-    WindowedAssociativeOp{T,Op,Op!,V<:AbstractVector{T}}
+    WindowedAssociativeOp{T,Op,Op!,V<:AbstractVector{T}}(previous_cumsum::V, values::V)
+    WindowedAssociativeOp{T,Op,Op!}()
+    WindowedAssociativeOp{T,Op}()
 
 State associated with a windowed aggregation of a binary associative operator.
 
-If `Op!` is not specifiied, it will default to `Op`.  However, for non-bitstypes, it can be
-beneficial to provide this methods to reduce memory allocations.
-`V` will default to a `Vector{T}`.
+If `Op!` is not specified, it will default to `Op`.  However, for non-bitstypes, it can be
+beneficial to provide this method to reduce memory allocations.
+
+`V` will default to a `Vector{T}`. For windows of a fixed and known length, a circular
+buffer will be more efficient — see `FixedWindowAssociativeOp`.
 
 # Method
 
@@ -37,12 +41,12 @@ cumulative sums. We create a new, empty, `B`.
 window length.
 
 # Type parameters
-- `T`: The type of the values of the array.
+- `T`: The type of the values in the window.
 - `Op`: Any binary, associative, function.
-- `Op!`: Op!(x, y) will perform `x + y`, storing the result in `x`.
-- `V`: The subtype of AbstractVector{T} used for internal state.
+- `Op!`: `Op!(x, y)` will perform `x + y`, storing the result in `x`.
+- `V`: The subtype of `AbstractVector{T}` used for internal state.
 
-# Fields
+# Fields (for internal use only)
 - `previous_cumsum::Vector{T}`: Corresponds to array `A` above.
 - `ri_previous_cumsum::Int`: A reverse index into `previous_cumsum`, once it contains
     values. It should be subtracted from `end` in order to obtain the appropriate index.
