@@ -41,7 +41,7 @@ mutable struct TimeWindowAssociativeOp{Value,Op,Op!,Time,TimeDiff}
             throw(ArgumentError("Got window $window, but it must be positive."))
         end
         return new{Value,Op,Op!,Time,TimeDiff}(
-            WindowedAssociativeOp{Value,Op,Op!,}(), window, Deque{Time}(), false
+            WindowedAssociativeOp{Value,Op,Op!}(), window, Deque{Time}(), false
         )
     end
 end
