@@ -137,16 +137,16 @@ Base.@propagate_inbounds function update_state!(
         empty!(state.previous_cumsum)
         upper = length(state.values)
         lower = 1 + num_values_to_remove
-        if (upper - lower) >= 0  # i.e. we have a non-zero range
+        @inbounds if (upper - lower) >= 0  # i.e. we have a non-zero range
             i = upper
-            accumulation = @inbounds(state.values[i])
+            accumulation = state.values[i]
             while true
                 push!(state.previous_cumsum, accumulation)
                 i -= 1
                 i >= lower || break
                 # If we were to use a mutating operation here, then we'd have to introduce
                 # a copy above. So there is no drawback to using the non-mutating Op.
-                accumulation = Op(@inbounds(state.values[i]), accumulation)
+                accumulation = Op(state.values[i], accumulation)
             end
         end
 
