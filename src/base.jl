@@ -95,6 +95,8 @@ Base.@propagate_inbounds function update_state!(
 ) where {T,Op,Op!}
     # Our index into previous_cumsum is advanced by the number of values we drop from the
     # window.
+    # TODO This could be dangerous, since if we get an error later the state will be
+    #   invalid.
     state.ri_previous_cumsum += num_dropped_from_window
 
     # If this has taken us out-of-range of the _previous_cumsum values, we must recompute
@@ -168,6 +170,96 @@ Base.@propagate_inbounds function update_state!(
 end
 
 """
+    drop_values!(
+        state::WindowedAssociativeOp{T,Op,Op!}, n::Integer
+    ) where {T,Op,Op!}
+
+Drop `n` values from the leading edge of the window.
+"""
+function drop_values!(state::WindowedAssociativeOp{T,Op,Op!}, n::Integer) where {T,Op,Op!}
+    n > 0 || throw(ArgumentError("n must be positive, got n=$n"))
+
+    # FIXME At best this will be hacky
+    # FIXME At best this will be hacky
+    # FIXME At best this will be hacky
+    # FIXME At best this will be hacky
+
+    # Our index into previous_cumsum is advanced by the number of values we drop from the
+    # window.
+    # TODO This could be dangerous, since if we get an error later the state will be
+    #   invalid.
+    state.ri_previous_cumsum += n
+
+    # If this has taken us out-of-range of the _previous_cumsum values, we must recompute
+    # them.
+    elements_remaining = length(state.previous_cumsum) - state.ri_previous_cumsum
+
+    if elements_remaining < 0
+        # We have overshot the end of previous_cumsum.
+
+        # We may also need to discard elements from values. This could happen if n > 1.
+        num_values_to_remove = -elements_remaining
+        @boundscheck if num_values_to_remove > length(state.values)
+            throw(ArgumentError("n = $n is out of range"))
+        end
+
+        # We now generate the partial sum, and set our index back to zero. values is also
+        # emptied, since its information is now reflected in previous_cumsum.
+        # NOTE: We need to take care here in the case of non-commutation. In accumulate, we
+        # will be getting:
+        #
+        #    (x0, op(x0, x1), op(op(x0, x1), x2), ...)
+        #
+        # but we actually want:
+        #
+        #    (x0, op(x1, x0), op(x2, op(x1, x0)), ...)
+
+        # Conceptually the following code is equivalent to the following, however avoids
+        # unnecessary allocations:
+        # trimmed_reversed_values = state.values[end:-1:1 + num_values_to_remove]
+        # state.previous_cumsum = accumulate(
+        #     (x, y) -> Op(y, x),
+        #     trimmed_reversed_values
+        # )
+
+        empty!(state.previous_cumsum)
+        upper = length(state.values)
+        lower = 1 + num_values_to_remove
+        if (upper - lower) >= 0  # i.e. we have a non-zero range
+            i = upper
+            accumulation = @inbounds(state.values[i])
+            while true
+                push!(state.previous_cumsum, accumulation)
+                i -= 1
+                i >= lower || break
+                # If we were to use a mutating operation here, then we'd have to introduce
+                # a copy above. So there is no drawback to using the non-mutating Op.
+                accumulation = Op(@inbounds(state.values[i]), accumulation)
+            end
+        end
+
+        state.ri_previous_cumsum = 0
+        empty!(state.values)
+        # FIXME state.sum is now garbage.
+        # This matters...
+    end
+
+
+    # # We want to make sure that we never actually mutate any value object that we pass to
+    # # `update_state!`.
+    # # Note that when initialising `state.sum`, we should take a copy if our mutating `Op!`
+    # # is different to `Op`. This is because we know that `Op` is necessarily non-mutating.
+    # _copy(x) = (Op == Op!) ? x : deepcopy(x)
+
+    # # Include the new value in sum and values.
+    # state.sum = isempty(state.values) ? _copy(value) : Op!(state.sum, value)
+    # state.sum =
+    # push!(state.values, value)
+
+    return state
+end
+
+"""
     window_value(state::WindowedAssociativeOp{T})::T where T
 
 Get the value currently represented by the state.
@@ -188,6 +280,10 @@ function window_value(state::WindowedAssociativeOp{T,Op})::T where {T,Op}
         # We aren't using the A buffer, either because values is full or the A buffer has
         # not yet been populated.
         state.sum
+    elseif length(state.values) == 0
+        # We are using the A buffer, but not the B buffer.
+        # `state.sum` has an uninitialised value.
+        @inbounds(state.previous_cumsum[index])
     else
         Op(@inbounds(state.previous_cumsum[index]), state.sum)
     end
