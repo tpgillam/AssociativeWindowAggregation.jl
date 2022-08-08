@@ -1,5 +1,12 @@
 name: CI
-on: [push, pull_request]
+# Run on main, tags, or any pull request
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC (8 PM CST)
+  push:
+    branches: [main]
+    tags: ["*"]
+  pull_request:
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -9,8 +16,8 @@ jobs:
       matrix:
         version:
           - '1.5'
-          - '1.6'
-          - '1.7-nightly'
+          - '1'
+          - 'nightly'
         os:
           - ubuntu-latest
         arch:
