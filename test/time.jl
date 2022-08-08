@@ -66,6 +66,9 @@ end
     @testset "incompatible time type" begin
         # Time is of type Int64, but window is given as a Float64 -> this should throw.
         @test_throws ArgumentError TimeWindowAssociativeOp{Float64,+,Int64}(10.0)
+        # A negative or zero time window should throw
+        @test_throws ArgumentError TimeWindowAssociativeOp{Float64,+,Int64}(-10)
+        @test_throws ArgumentError TimeWindowAssociativeOp{Float64,+,Int64}(0)
     end
 
     @testset "integral" begin
