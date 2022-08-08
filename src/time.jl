@@ -46,7 +46,7 @@ mutable struct TimeWindowAssociativeOp{Value,Op,Op!,Time,TimeDiff}
     end
 end
 
-function TimeWindowAssociativeOp{T,Op,Time}(window::TimeDiff) where {T,Op,Time,TimeDiff}
+function TimeWindowAssociativeOp{T,Op,Time}(window) where {T,Op,Time}
     return TimeWindowAssociativeOp{T,Op,Op,Time}(window)
 end
 
