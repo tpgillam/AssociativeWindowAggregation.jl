@@ -1,6 +1,4 @@
-function test_fixed_window(
-    values, op; op_bang=nothing, approximate_equality::Bool=false
-)
+function test_fixed_window(values, op; op_bang=nothing, approximate_equality::Bool=false)
     # For later comparison, to ensure that we don't mutate any of these
     values_copy = deepcopy(values)
 

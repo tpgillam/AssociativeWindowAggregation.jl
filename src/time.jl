@@ -84,7 +84,8 @@ function update_state!(state::TimeWindowAssociativeOp, time, value)
         num_dropped_from_window += 1
     end
 
-    update_state!(state.window_state, value, num_dropped_from_window)
+    @inbounds popfirst!(state.window_state, num_dropped_from_window)
+    push!(state.window_state, value)
 
     if !state.window_full && num_dropped_from_window > 0
         # The window has now filled; record this for use in `window_full` below.

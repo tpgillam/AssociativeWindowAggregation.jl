@@ -72,47 +72,54 @@ end
 WindowedAssociativeOp{T,Op}() where {T,Op} = WindowedAssociativeOp{T,Op,Op}()
 
 """
-    update_state!(
-        state::WindowedAssociativeOp,
-        value,
-        num_dropped_from_window::Integer
-    ) -> state
+    push!(state::WindowedAssociativeOp{T}, value) -> state
 
-Add the specified value to the state, drop some number of elements from the start of the
-window, and return `state` (which will have been mutated).
+Push `value` onto the end of `state`.
 
 # Arguments
 - `state::WindowedAssociativeOp`: The state to update (will be mutated).
 - `value`: The value to add to the end of the window - must be convertible to a `T`.
-- `num_dropped_from_window::Integer`: The number of elements to remove from the front of
-    the window.
-
-# Returns
-- The instance `state` that was passed in.
 """
-Base.@propagate_inbounds function update_state!(
-    state::WindowedAssociativeOp{T,Op,Op!}, value, num_dropped_from_window::Integer
-) where {T,Op,Op!}
-    # Our index into previous_cumsum is advanced by the number of values we drop from the
-    # window.
-    state.ri_previous_cumsum += num_dropped_from_window
+function Base.push!(state::WindowedAssociativeOp{T,Op,Op!}, value) where {T,Op,Op!}
+    # We want to make sure that we never actually mutate any value object that we pass to
+    # `push!`.
+    # Note that when initialising `state.sum`, we should take a copy if our mutating `Op!`
+    # is different to `Op`. This is because we know that `Op` is necessarily non-mutating.
+    _copy(x) = (Op === Op!) ? x : deepcopy(x)
+
+    # Include the new value in sum and values.
+    state.sum = isempty(state.values) ? _copy(value) : Op!(state.sum, value)
+    push!(state.values, value)
+    return state
+end
+
+"""
+    popfirst!(state::WindowedAssociativeOp, n::Integer=1) -> state
+
+Drop `n` values from the start of `state`.
+"""
+Base.@propagate_inbounds function Base.popfirst!(
+    state::WindowedAssociativeOp{T,Op}, n::Integer=1
+) where {T,Op}
+    n == 0 && return state
+    n >= 0 || throw(ArgumentError("n must be non-negative, got n=$n"))
+
+    # Our index into previous_cumsum is advanced by the number of values we drop.
+    # Note that we do not assign to `ri_previous_cumsum` immediately, since this would make
+    # `state` invalid were we to throw an exception before returning.
+    new_ri_previous_cumsum = state.ri_previous_cumsum + n
 
     # If this has taken us out-of-range of the _previous_cumsum values, we must recompute
     # them.
-    elements_remaining = length(state.previous_cumsum) - state.ri_previous_cumsum
+    elements_remaining = length(state.previous_cumsum) - new_ri_previous_cumsum
 
     if elements_remaining < 0
         # We have overshot the end of previous_cumsum.
 
-        # We may also need to discard elements from values. This could happen if
-        # num_dropped_from_window > 1.
+        # We may also need to discard elements from values. This could happen if n > 1.
         num_values_to_remove = -elements_remaining
         @boundscheck if num_values_to_remove > length(state.values)
-            throw(
-                ArgumentError(
-                    "num_dropped_from_window = $num_dropped_from_window is out of range"
-                ),
-            )
+            throw(ArgumentError("n = $n is out of range"))
         end
 
         # We now generate the partial sum, and set our index back to zero. values is also
@@ -152,18 +159,12 @@ Base.@propagate_inbounds function update_state!(
 
         state.ri_previous_cumsum = 0
         empty!(state.values)
-        # state.sum is now garbage, but we are not going to use it before we recompute it.
+        # WARNING! `state.sum` is now garbage.
+        #   This means that we have to be careful to not use it if `state.values` is empty.
+    else
+        state.ri_previous_cumsum = new_ri_previous_cumsum
     end
 
-    # We want to make sure that we never actually mutate any value object that we pass to
-    # `update_state!`.
-    # Note that when initialising `state.sum`, we should take a copy if our mutating `Op!`
-    # is different to `Op`. This is because we know that `Op` is necessarily non-mutating.
-    _copy(x) = (Op == Op!) ? x : deepcopy(x)
-
-    # Include the new value in sum and values.
-    state.sum = isempty(state.values) ? _copy(value) : Op!(state.sum, value)
-    push!(state.values, value)
     return state
 end
 
@@ -188,6 +189,10 @@ function window_value(state::WindowedAssociativeOp{T,Op})::T where {T,Op}
         # We aren't using the A buffer, either because values is full or the A buffer has
         # not yet been populated.
         state.sum
+    elseif isempty(state.values)
+        # We are using the A buffer, but not the B buffer.
+        # `state.sum` has an uninitialised value.
+        @inbounds(state.previous_cumsum[index])
     else
         Op(@inbounds(state.previous_cumsum[index]), state.sum)
     end
