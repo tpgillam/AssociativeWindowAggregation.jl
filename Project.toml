@@ -1,7 +1,7 @@
 name = "AssociativeWindowAggregation"
 uuid = "444271a7-5434-4a02-b82b-0e30a9223c60"
-authors = ["Thomas Gillam <tpgillam@googlemail.com>"]
-version = "0.3.2"
+authors = ["Tom Gillam <tpgillam@googlemail.com>"]
+version = "0.4.0"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
