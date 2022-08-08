@@ -16,9 +16,7 @@ mutable struct FixedWindowAssociativeOp{T,Op,Op!}
     window_state::WindowedAssociativeOp{T,Op,Op!,CircularBuffer{T}}
     remaining_window::Int
 
-    function FixedWindowAssociativeOp{T,Op,Op!}(
-        window::Integer
-    ) where {T,Op,Op!}
+    function FixedWindowAssociativeOp{T,Op,Op!}(window::Integer) where {T,Op,Op!}
         window < 1 && throw(ArgumentError("Got window $window, but it must be positive."))
         window_state = WindowedAssociativeOp{T,Op,Op!,CircularBuffer{T}}(
             CircularBuffer{T}(window - 1), CircularBuffer{T}(window)
@@ -50,7 +48,8 @@ function update_state!(state::FixedWindowAssociativeOp, value)
 
     # With @inbounds, we assert that num_dropped_from_window will never exceed the size of
     # the window.
-    @inbounds update_state!(state.window_state, value, num_dropped_from_window)
+    @inbounds popfirst!(state.window_state, num_dropped_from_window)
+    push!(state.window_state, value)
     return state
 end
 

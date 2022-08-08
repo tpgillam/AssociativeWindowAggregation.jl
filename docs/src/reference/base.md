@@ -1,10 +1,11 @@
 # General window
 
-A state to represent a window of aribtrarily variable capacity.
+A state to represent a window of arbitrarily variable capacity.
 
-Every time a new value is pushed onto the end of the window, we must specify how many values are removed from the front of the window.
+We push new values onto the window with [`Base.push!`](@ref).
+We can remove old values from the window with [`Base.popfirst!`](@ref).
 
 ```@autodocs
-Modules = [AssociativeWindowAggregation]
+Modules = [AssociativeWindowAggregation, Base]
 Pages = ["base.jl"]
 ```
