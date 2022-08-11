@@ -5,7 +5,7 @@
 [![Codecov](https://codecov.io/gh/tpgillam/AssociativeWindowAggregation.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/tpgillam/AssociativeWindowAggregation.jl)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 
-Accumulate result of appying binary associative operators on rolling windows.
+Accumulate result of applying binary associative operators on rolling windows.
 
 The algorithm is constant time with respect to the window length, and is numerically stable. 
 Details can be found in the [documentation](https://tpgillam.github.io/AssociativeWindowAggregation.jl/dev). 
